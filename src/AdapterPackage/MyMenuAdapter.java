@@ -17,12 +17,5 @@ public MyMenuAdapter (dtnrouting dtn)
     {
     this.dtn=dtn;
     }
-    @Override
- public void menuSelected(MenuEvent e) {
-        Setting setting=new Setting();
-                setting.createSettingFrame();
-       
-        
-    }
 
 }

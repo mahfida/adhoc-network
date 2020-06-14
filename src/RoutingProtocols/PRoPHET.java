@@ -7,7 +7,7 @@ package RoutingProtocols;
 //IMPORT FILES
 
 import DTNRouting.*;
-import MovementPattern.NodeMovement;
+
 import java.util.Iterator;
 import java.util.Map;
 
@@ -103,9 +103,9 @@ public void Aging(int x,int y)
 
 public void Deliver(Node nx,Node ny)
 {  
-    Encounter(nx.nodeID-1,ny.nodeID-1);
-    Transitivity(nx.nodeID-1,ny.nodeID-1);
-    Aging(nx.nodeID-1,ny.nodeID-1);
+    Encounter(nx.ID-1,ny.ID-1);
+    Transitivity(nx.ID-1,ny.ID-1);
+    Aging(nx.ID-1,ny.ID-1);
     //Bidirectional connectivity
     DeliverMessage(nx, ny);
     DeliverMessage(ny, nx);
@@ -122,70 +122,71 @@ public void DeliverMessage(Node nx, Node ny)
       if(!warmFlag)
       {
           dtnrouting.CommentsTA.append(" FINISHED ");
-          for(int h=0;h<dtnrouting.areBundlesDelivered.size();h++)
+          for(int h=0;h<dtnrouting.arePacketsDelivered.size();h++)
             {
-                Bundle bundleObj=dtnrouting.areBundlesDelivered.get(h);
-                bundleObj.bundleTTL=bundleObj.maxTTL;
-                bundleObj.bundleLatency=0;
+                Packet packetObj=dtnrouting.arePacketsDelivered.get(h);
+                packetObj.packetTTL=packetObj.maxTTL;
+                packetObj.packetLatency=0;
             }
           dtnrouting.delay=0;
       }
       warmFlag=true;
-    //if nx has bundle and ny has to recieve it
-   if(!nx.DestNBundle.isEmpty())
+    //if nx has packet and ny has to recieve it
+   if(!nx.DestNPacket.isEmpty())
    {
-    //Update the time spent by bundles within a node nx
-         nx. updateBundleTimestamp(nx);
+    //Update the time spent by packets within a node nx
+         nx. updatepacketTimestamp(nx);
     //Transfer the bundels
 
-   for (Iterator<Map.Entry<Bundle,Node>> i = nx.DestNBundle.entrySet().iterator(); i.hasNext(); )
+   for (Iterator<Map.Entry<Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
     {
-    Map.Entry<Bundle,Node> entry = i.next();
-    Bundle bundleObj = entry.getKey();
+    Map.Entry<Packet,Node> entry = i.next();
+    Packet packetObj = entry.getKey();
     Node   destNode = entry.getValue();
           
-    //If destiantion has not enough size to recieve bundle
-    //OR if its TTL is expired, , it bundle cannot be sent
+    //If destiantion has not enough size to recieve packet
+    //OR if its TTL is expired, , it packet cannot be sent
 
-     if(checkTTLandSize(nx,ny,destNode,bundleObj)==true);
+     if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
 
-    //If destiantion has enough size to recieve bundle
-    //and if its TTL is not expired, , it bundle can be sent
+    //If destiantion has enough size to recieve packet
+    //and if its TTL is not expired, , it packet can be sent
     // if contact duration is enough to transfer the message
     else
-    if(bundleObj.bundleSize<=dtnrouting.contactDuration[nx.nodeID-1][ny.nodeID-1]){
+    if(packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1]){
 
-    //If encountered Node has not yet recieved bundle, bundle is yet not delivered,in ny's buffer enough space is free to occupy the bundle and bundle TTL is not expired
-    if((ny.bundleIDHash.contains(bundleObj.bundleName) == false) && (ny.queueSizeLeft > bundleObj.bundleSize) && (bundleObj.isBundleDelivered == false) && (bundleObj.bundleTTL > 0))
+    //If encountered Node has not yet recieved packet, packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
+    if((ny.packetIDHash.contains(packetObj.packetName) == false) && (ny.queueSizeLeft > packetObj.packetSize) && (packetObj.ispacketDelivered == false) && (packetObj.packetTTL > 0))
     {
         if(ny==destNode)
         {
-        bundleObj.bundleBandwidth+=1; //Since bundle is transfered
-        ny.DestNBundle.put(bundleObj,null);
-        ny.bundleIDHash.add(bundleObj.bundleName);
-        ny.queueSizeLeft-=bundleObj.bundleSize;
-        ny.bundleTimeSlots.put(bundleObj.bundleName,0);
-        bundleObj.isBundleDelivered=true;
+        packetObj.packetBandwidth+=1; //Since packet is transfered
+        ny.DestNPacket.put(packetObj,null);
+        ny.packetIDHash.add(packetObj.packetName);
+        ny.queueSizeLeft-=packetObj.packetSize;
+        ny.packetTimeSlots.put(packetObj.packetName,0);
+        packetObj.ispacketDelivered=true;
         //update nx
-        nx.queueSizeLeft+=bundleObj.bundleSize; // the whole space
-        nx.bundleIDHash.remove(bundleObj.bundleName);
-        nx.bundleTimeSlots.remove(bundleObj.bundleName);
+        nx.queueSizeLeft+=packetObj.packetSize; // the whole space
+        nx.packetIDHash.remove(packetObj.packetName);
+        nx.packetTimeSlots.remove(packetObj.packetName);
 
         i.remove();
         //Display Result
-          dtnrouting.CommentsTA.append("\n"+nx.name+" ---> "+ny.name+":"+bundleObj.bundleName);
+        dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
+        
         }
 
-        else  if((!ny.bundleIDHash.contains(bundleObj.bundleName))&&((dtnrouting.p[ny.nodeID-1][destNode.nodeID-1])>(dtnrouting.p[nx.nodeID-1][destNode.nodeID-1])))
+        else  if((!ny.packetIDHash.contains(packetObj.packetName))&&((dtnrouting.p[ny.ID-1][destNode.ID-1])>(dtnrouting.p[nx.ID-1][destNode.ID-1])))
         {
-         bundleObj.bundleBandwidth+=1; //Since bundle is transfered
-         ny.DestNBundle.put(bundleObj,destNode);
-         ny.bundleIDHash.add(bundleObj.bundleName);
-         ny.queueSizeLeft-=bundleObj.bundleSize;
-         ny.bundleTimeSlots.put(bundleObj.bundleName,0);
-         bundleObj.bundleLoad+=1;
+         packetObj.packetBandwidth+=1; //Since packet is transfered
+         ny.DestNPacket.put(packetObj,destNode);
+         ny.packetIDHash.add(packetObj.packetName);
+         ny.queueSizeLeft-=packetObj.packetSize;
+         ny.packetTimeSlots.put(packetObj.packetName,0);
+         packetObj.packetLoad+=1;
              //Display Result
-         dtnrouting.CommentsTA.append("\n"+nx.name+" ---> "+ny.name+":"+bundleObj.bundleName);
+         dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
         }
      }
     }
@@ -194,7 +195,7 @@ public void DeliverMessage(Node nx, Node ny)
 
 }
 
-//Check whether forwading of bundles have ended
+//Check whether forwading of packets have ended
 checkForwardingEnds();
   }
 

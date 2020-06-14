@@ -36,120 +36,67 @@ public void DeliverMessage(Node nx, Node ny)
 {
   if(dtnrouting.isRun==true )
   {
-   //if nx has bundle and ny has to recieve it
-   if(!nx.DestNBundle.isEmpty())
+   //if nx has packet and ny has to recieve it
+   if(!nx.DestNPacket.isEmpty())
    {
-   nx.updateBundleTimestamp(nx);
+   nx.updatepacketTimestamp(nx);
    
-   for (Iterator<Map.Entry<Bundle,Node>> i = nx.DestNBundle.entrySet().iterator(); i.hasNext(); )
+   for (Iterator<Map.Entry<Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
     {
-       Map.Entry<Bundle,Node> entry = i.next();
-       Bundle bundleObj = entry.getKey();
+       Map.Entry<Packet,Node> entry = i.next();
+       Packet packetObj = entry.getKey();
        Node   destNode = entry.getValue();
 
-       //If destiantion has not enough size to recieve bundle
-        //OR if its TTL is expired, , it bundle cannot be sent
+       //If destiantion has not enough size to recieve packet
+        //OR if its TTL is expired, , it packet cannot be sent
 
-         if(checkTTLandSize(nx,ny,destNode,bundleObj)==true);
+         if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
 
-        //If destiantion has enough size to recieve bundle
-        //and if its TTL is not expired, , it bundle can be sent
+        //If destiantion has enough size to recieve packet
+        //and if its TTL is not expired, , it packet can be sent
         // if contact duration is enough to transfer the message
         else
-        if(bundleObj.bundleSize<=dtnrouting.contactDuration[nx.nodeID-1][ny.nodeID-1] && !ny.bundleIDHash.contains(bundleObj.bundleName))
+        if(packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1] && !ny.packetIDHash.contains(packetObj.packetName))
         {
-                //If encountered Node is destination and bundle is yet not delivered,in ny's buffer enough space is free to occupy the bundle and bundle TTL is not expired
-               if((bundleObj.isBundleDelivered==false)&&(ny.queueSizeLeft-bundleObj.bundleSize>=0)&&(bundleObj.bundleTTL>0))
+                //If encountered Node is destination and packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
+               if((packetObj.ispacketDelivered==false)&&(ny.queueSizeLeft-packetObj.packetSize>=0)&&(packetObj.packetTTL>0))
                 {
                    if(destNode==ny)
                    {
                           
-                           ny.DestNBundle.put(bundleObj,null);
-                           deliverBundle(nx,ny,bundleObj);
-                           bundleObj.isBundleDelivered=true;
+                           ny.DestNPacket.put(packetObj,null);
+                           deliverPacket(nx,ny,packetObj);
+                           packetObj.ispacketDelivered=true;
                            i.remove();
-                           System.out.println(bundleObj.bundleName+" "+bundleObj.bundleLatency);
+                           System.out.println(packetObj.packetName+" "+packetObj.packetLatency);
                    }
-                 boolean returnValue=deviceBasedBundleTransfer(nx, ny,destNode,bundleObj);
-                 if(returnValue==true)  i.remove();
-
+                 
                  }
 
          }
 
     }
   }
-//Chech whether forwading of bundles have ended
+//Chech whether forwading of packets have ended
 checkForwardingEnds();
 }
 }//end of method name
 
-//*****************************************************************************
-
-public boolean deviceBasedBundleTransfer(Node nx, Node ny,Node destNode, Bundle bundleObj)
-{
-     boolean returnValue=false;
-     //if single ferry is used
-       if((DeviceBasedSettings.ferryType.equals("Single-Ferry")) && (ny.name.substring(0, 1).equals("F")))
-       {
-                if((bundleObj.endNodesRegion.equals("Different")==true)||ny.visitingRegion.getNetworkType().equals("Static"))
-                {
-                        //if encountered node is a ferry then deliver bundle to is
-                        ny.DestNBundle.put(bundleObj,destNode);
-                        deliverBundle(nx,ny,bundleObj);
-                        returnValue=true;
-                        return(returnValue);
-
-                }
-        }
-
-        if(DeviceBasedSettings.ferryType.equals("Pigeon"))
-       {
-            if((nx.name.substring(0,1).equals("R")||nx.name.startsWith("D"))&& ny.name.substring(0, 2).equals("CH"))
-            if((bundleObj.endNodesRegion.equals("Different")==true)||ny.nodeRegion.getNetworkType().equals("Static"))
-             {
-                        //if encountered node is a ferry then deliver bundle to is
-                        ny.DestNBundle.put(bundleObj,destNode);
-                        deliverBundle(nx,ny,bundleObj);
-                          returnValue=true;
-                          return(returnValue);
-
-           }
-            if(nx.name.substring(0,2).equals("CH")&& (ny.name.substring(0, 1).equals("F") && !destNode.nodeRegion.equals(ny.nodeRegion)))
-            {
-                        //if encountered node is a ferry then deliver bundle to is
-                        ny.DestNBundle.put(bundleObj,destNode);
-                        deliverBundle(nx,ny,bundleObj);
-                           returnValue=true;
-                           return(returnValue);
-            }
-             if(ny.name.substring(0,2).equals("CH")&& (nx.name.substring(0, 1).equals("F") && destNode.nodeRegion.equals(ny.nodeRegion) && !nx.nodeRegion.equals(ny.nodeRegion)))
-             {
-                     //if encountered node is a ferry then deliver bundle to is
-                        ny.DestNBundle.put(bundleObj,destNode);
-                        deliverBundle(nx,ny,bundleObj);
-                          returnValue=true;
-                          return(returnValue);
-             }
-        }
- return(returnValue);
-}
-
 //******************************************************************************
 
 @Override
-public void deliverBundle(Node nx, Node ny, Bundle bundleObj)
+public void deliverPacket(Node nx, Node ny, Packet packetObj)
    {
-        bundleObj.bundleBandwidth+=1; //Since bundle is transfered
-        ny.bundleIDHash.add(bundleObj.bundleName);
-        ny.bundleTimeSlots.put(bundleObj.bundleName, 0);
-        ny.bundleCopies.put(bundleObj.bundleName,1);
-        ny.queueSizeLeft-=bundleObj.bundleSize;
-        dtnrouting.CommentsTA.append("\n"+nx.name+" ---> "+ny.name+":"+bundleObj.bundleName);
-         //update nx
-        nx.queueSizeLeft+=bundleObj.bundleSize; // the whole space            nx.bundleIDHash.remove(bundleObj.bundleName);
-        nx.bundleTimeSlots.remove(bundleObj.bundleName);
-        nx.bundleCopies.remove(bundleObj.bundleName);
+        packetObj.packetBandwidth+=1; //Since packet is transfered
+        ny.packetIDHash.add(packetObj.packetName);
+        ny.packetTimeSlots.put(packetObj.packetName, 0);
+        ny.packetCopies.put(packetObj.packetName,1);
+        ny.queueSizeLeft-=packetObj.packetSize;
+        dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
+        //update nx
+        nx.queueSizeLeft+=packetObj.packetSize; // the whole space            nx.packetIDHash.remove(packetObj.packetName);
+        nx.packetTimeSlots.remove(packetObj.packetName);
+        nx.packetCopies.remove(packetObj.packetName);
    }
 
 //******************************************************************************

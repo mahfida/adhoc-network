@@ -7,7 +7,7 @@ package RoutingProtocols;
 //IMPORT FILES
 
 import DTNRouting.*;
-import MovementPattern.NodeMovement;
+
 import java.util.Iterator;
 import java.util.Map;
 
@@ -49,95 +49,95 @@ super.Encounter(x, y);//to update preditibility value and set AgeCounter to zero
 @Override
 public void Deliver(Node nx,Node ny)
 {
-    Encounter(nx.nodeID-1,ny.nodeID-1);
-    Transitivity(nx.nodeID-1,ny.nodeID-1);
-    Aging(nx.nodeID-1,ny.nodeID-1);
+    Encounter(nx.ID-1,ny.ID-1);
+    Transitivity(nx.ID-1,ny.ID-1);
+    Aging(nx.ID-1,ny.ID-1);
    
   if(NodeMovement.warmupPeriod==size) //Warming Period finished
     {
       if(!warmFlag)
       {
-        for(int h=0;h<dtnrouting.areBundlesDelivered.size();h++)
+        for(int h=0;h<dtnrouting.arePacketsDelivered.size();h++)
         {
-            Bundle bundleObj=dtnrouting.areBundlesDelivered.get(h);
-            bundleObj.bundleTTL=bundleObj.maxTTL;
-            bundleObj.bundleLatency=0;
+            Packet packetObj=dtnrouting.arePacketsDelivered.get(h);
+            packetObj.packetTTL=packetObj.maxTTL;
+            packetObj.packetLatency=0;
         }
           dtnrouting.CommentsTA.append(" FINISHED\n");
           dtnrouting.delay=0;
       }
       warmFlag=true;
-   if(!nx.DestNBundle.isEmpty())
+   if(!nx.DestNPacket.isEmpty())
    {
-    //Update the time spent by bundles within a node nx
-   nx. updateBundleTimestamp(nx);
+    //Update the time spent by packets within a node nx
+   nx. updatepacketTimestamp(nx);
    //Transfer the bundels
-   for (Iterator<Map.Entry<Bundle,Node>> i = nx.DestNBundle.entrySet().iterator(); i.hasNext(); )
+   for (Iterator<Map.Entry<	Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
     {
-        Map.Entry<Bundle,Node> entry = i.next();
-        Bundle bundleObj = entry.getKey();
+        Map.Entry<Packet,Node> entry = i.next();
+        Packet packetObj = entry.getKey();
         Node   destNode = entry.getValue();
-        if((bundleObj.isBundleDelivered==false)   // if contact duration is enough to transfer the message
-        && (bundleObj.bundleSize<=dtnrouting.contactDuration[nx.nodeID-1][ny.nodeID-1]))
+        if((packetObj.ispacketDelivered==false)   // if contact duration is enough to transfer the message
+        && (packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1]))
         {
-            //If destination encounters, hands over bundle to it
+            //If destination encounters, hands over packet to it
             if(ny==destNode)
-                   cases=1;//handle bundle to destination and delete its copy
+                   cases=1;//handle packet to destination and delete its copy
 
             else
-               if((dtnrouting.p[ny.nodeID-1][destNode.nodeID-1])>(dtnrouting.p[nx.nodeID-1][destNode.nodeID-1]))
+               if((dtnrouting.p[ny.ID-1][destNode.ID-1])>(dtnrouting.p[nx.ID-1][destNode.ID-1]))
                {
-                   if((AvgICDuration[nx.nodeID-1][destNode.nodeID-1]>0.0) && ((AgeCounter[nx.nodeID-1][destNode.nodeID-1])>(0.67*AvgICDuration[nx.nodeID-1][destNode.nodeID-1]))&&(dtnrouting.p[nx.nodeID-1][destNode.nodeID-1]>0.0))
-                    cases=2;//give bundle to ny and keep its copy with itself too
+                   if((AvgICDuration[nx.ID-1][destNode.ID-1]>0.0) && ((AgeCounter[nx.ID-1][destNode.ID-1])>(0.67*AvgICDuration[nx.ID-1][destNode.ID-1]))&&(dtnrouting.p[nx.ID-1][destNode.ID-1]>0.0))
+                    cases=2;//give packet to ny and keep its copy with itself too
                    else
-                    cases=3; //give bundle to ny and delete its local copy
+                    cases=3; //give packet to ny and delete its local copy
                }
              else   //if ny may meet destination soon
-                 if((AvgICDuration[ny.nodeID-1][destNode.nodeID-1]>0.0) && ((AgeCounter[ny.nodeID-1][destNode.nodeID-1])>(0.67*AvgICDuration[ny.nodeID-1][destNode.nodeID-1]))&&(dtnrouting.p[ny.nodeID-1][destNode.nodeID-1]>0.0))
+                 if((AvgICDuration[ny.ID-1][destNode.ID-1]>0.0) && ((AgeCounter[ny.ID-1][destNode.ID-1])>(0.67*AvgICDuration[ny.ID-1][destNode.ID-1]))&&(dtnrouting.p[ny.ID-1][destNode.ID-1]>0.0))
                      cases=2; // there is chances that ny may meet sooner than nx with ny, so hand over a copy to ny and keep one with nx
            
-            //Hand Over the bundle to encountered Node
-            bundleObj.bundleBandwidth+=1; //Since bundle is transfered
-            ny.bundleIDHash.add(bundleObj.bundleName);
-            ny.queueSizeLeft-=bundleObj.bundleSize;
-            bundleObj.bundleTTL-=1;
+            //Hand Over the packet to encountered Node
+            packetObj.packetBandwidth+=1; //Since packet is transfered
+            ny.packetIDHash.add(packetObj.packetName);
+            ny.queueSizeLeft-=packetObj.packetSize;
+            packetObj.packetTTL-=1;
 
-            //Perform case specific funtions
+            //Perform case specific functions
             switch(cases)
            {
                 case 1:
-                   //deliver bundel to destination
-                   ny.DestNBundle.put(bundleObj,null);
-                   bundleObj.isBundleDelivered=true;
-                   bundleObj.bundleLatency=dtnrouting.delay;
-                   //Delete bundle copy from nx
-                   nx.queueSizeLeft+=bundleObj.bundleSize; // the whole space
-                   nx.bundleIDHash.remove(bundleObj.bundleName);
+                   //deliver packet to destination
+                   ny.DestNPacket.put(packetObj,null);
+                   packetObj.ispacketDelivered=true;
+                   packetObj.packetLatency=dtnrouting.delay;
+                   //Delete packet copy from nx
+                   nx.queueSizeLeft+=packetObj.packetSize; // the whole space
+                   nx.packetIDHash.remove(packetObj.packetName);
                    i.remove();
                    break;
                
                 case 2:
-                   //deliver bundel to ny and keep copy with nx too
-                   ny.DestNBundle.put(bundleObj,destNode);
+                   //deliver packet to ny and keep copy with nx too
+                   ny.DestNPacket.put(packetObj,destNode);
                    break;
 
                 case 3:
-                   ny.DestNBundle.put(bundleObj,destNode);
-                   //Delete bundle copy from nx
-                   nx.queueSizeLeft+=bundleObj.bundleSize; // the whole space
-                   nx.bundleIDHash.remove(bundleObj.bundleName);
+                   ny.DestNPacket.put(packetObj,destNode);
+                   //Delete packet copy from nx
+                   nx.queueSizeLeft+=packetObj.packetSize; // the whole space
+                   nx.packetIDHash.remove(packetObj.packetName);
                    i.remove();
                    break;
                }
-            //Display Result
-             dtnrouting.CommentsTA.append(nx.name+" delivers "+bundleObj.bundleName+"  to "+ny.name+"\n");
+            	//Display Result
+            	dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
             }
 
            
          }
        }
     }
-//Chech whether forwading of bundles have ended
+//Check whether forwarding of packets have ended
  checkForwardingEnds();
 } //End of Deliver()
 } //End of MCPRoPHET
