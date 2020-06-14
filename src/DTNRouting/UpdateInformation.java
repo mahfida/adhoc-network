@@ -112,21 +112,11 @@ public void UpdateNodeArray()
 
     }
 
-    //Restart the routing process by assigning the packets to only its source
-    //for next simulation run
-    for(int g=0;g<dtnrouting.Sources.size();g++)
-    {  
-        //Refresh packet settings
-       dtnrouting.arePacketsDelivered.get(g).refreshPacketSettings();
-
-       //Assign packets to source Nodes again
-        Node node=new Node();
-        node=dtnrouting.Sources.get(g);
-        node.DestNPacket.put(dtnrouting.arePacketsDelivered.get(g), dtnrouting.Destinations.get(g));
-        node.queueSizeLeft-=dtnrouting.arePacketsDelivered.get(g).packetSize;
-        node.packetIDHash.add(dtnrouting.arePacketsDelivered.get(g).packetName);
-        node.packetCopies.put(dtnrouting.arePacketsDelivered.get(g).packetName, dtnrouting.arePacketsDelivered.get(g).packetLoad);
-    }
+    //Clear all packets
+    dtnrouting.arePacketsDelivered.clear();
+    //Generate packets again and assign sources/destinations
+    CreatePacket cp = new CreatePacket();
+    cp.CreateMessageAtSource();
 }//End of method
 
 //******************************************************************************

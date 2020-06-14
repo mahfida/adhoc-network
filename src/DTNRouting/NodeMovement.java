@@ -46,9 +46,9 @@ public  void InitialNodePositions(Node n)
 {
 	  n.x_coord.clear();
 	  n.y_coord.clear();
-	  n.nodeX = rand.nextInt(dtnrouting.width-2*n.getRadioRange()) + dtnrouting.x_start;
+	  n.nodeX = rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start;
       n.x_coord.add(n.nodeX);  //generate random value for x and y positions of node
-      n.nodeY = rand.nextInt(dtnrouting.height-2*n.getRadioRange()) + dtnrouting.y_start;
+      n.nodeY = rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start;
       n.y_coord.add(n.nodeY);
       n.positionTracker=0;
      
@@ -82,8 +82,8 @@ public void RandomMovement(Node n)
            
            // Choose random location for x-coordinate and y-coordinate
            if(n.x_coord.get(n.positionTracker)==n.nodeX & n.y_coord.get(n.positionTracker)==n.nodeY){
-             n.x_coord.add(rand.nextInt(dtnrouting.width-2*n.getRadioRange()) + dtnrouting.x_start);  
-             n.y_coord.add(rand.nextInt(dtnrouting.height-2*n.getRadioRange()) + dtnrouting.y_start);
+             n.x_coord.add(rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start);  
+             n.y_coord.add(rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start);
              n.positionTracker=n.positionTracker+1;
              }
             
@@ -100,8 +100,8 @@ public void InitializePsuedoPath(Node n)
  
 	int loc=rand.nextInt(20)+5;
 	for(int i=0;i< loc-1 ;i++) {
-		  n.x_coord.add(rand.nextInt(dtnrouting.width-2*n.getRadioRange()) + dtnrouting.x_start);  
-          n.y_coord.add(rand.nextInt(dtnrouting.height-2*n.getRadioRange()) + dtnrouting.y_start);
+		  n.x_coord.add(rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start);  
+          n.y_coord.add(rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start);
    }
 }
 

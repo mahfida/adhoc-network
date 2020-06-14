@@ -54,7 +54,7 @@ for (int k=0;k<dtnrouting.allNodes.size();k++)
     //Put name of node inside node circle
     g.setColor(Color.black);
     g.drawString(n.ID+"", n.nodeX+(r)/2-5, n.nodeY+(r)/2+2);
-
+    
     //Show whether packet is present: for one packet only
     if(!n.DestNPacket.isEmpty())
     {

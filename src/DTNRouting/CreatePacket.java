@@ -22,6 +22,7 @@ public class CreatePacket implements ActionListener
   public TextField tpacketSize=new TextField("1");
   public Button ok=new Button("Add");
   public Button close=new Button("Close");
+  public static int num_packets,ttl_packets,size_packets;
   Random rand=new Random();
 
 //******************************************************************************
@@ -54,7 +55,12 @@ public void actionPerformed(ActionEvent e)
  action=e.getActionCommand();
 
  if(action.equals("Close"))				jf.dispose();
- else if(value.equals("Add"))			CreateMessageAtSource();
+ else if(value.equals("Add")) {			
+	 num_packets = Integer.parseInt(tpacketNumber.getText());
+	 ttl_packets = Integer.parseInt(tpacketTTL.getText());
+	 size_packets = Integer.parseInt(tpacketSize.getText());
+	 CreateMessageAtSource();
+ }
 		
  
 }    
@@ -66,15 +72,15 @@ public void CreateMessageAtSource() {
         	//Destination chooses its source randomly
         	int source_id = rand.nextInt(dtnrouting.Sources.size());
         	
-        	for(int j=0; j< Integer.parseInt(tpacketNumber.getText()); j++) {//number of packets that each source will transmit..
+        	for(int j=0; j< num_packets; j++) {//number of packets that each source will transmit..
            	   Packet p =new Packet();
            	   Packet.packetID=Packet.packetID+1;
            	     // increment the id of packet and then add it in tpacketNumber
            	    p.packetName="p"+Packet.packetID; //packet Name for reference in code
            	    p.name="p"+(j+1);
            	    p.packet_color=new Color(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
-           	    p.packetTTL= p.maxTTL=Integer.parseInt(tpacketTTL.getText());
-           	    p.packetSize=Integer.parseInt(tpacketSize.getText());
+           	    p.packetTTL= p.maxTTL=ttl_packets;
+           	    p.packetSize=size_packets;
            	    dtnrouting.arePacketsDelivered.add(p);
         	
               if(dtnrouting.Sources.get(source_id).queueSizeLeft > p.packetSize)

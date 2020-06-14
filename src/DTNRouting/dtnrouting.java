@@ -34,7 +34,7 @@ public class dtnrouting extends Applet implements Runnable
     public int i,radio;
     public static long simulationTime=0;
     //  source and destination indices declare static and other parameters are initially 0
-    public static int  s_index=0, d_index=0,latency=0,bandwidth=0, load=0, DR=0, NoDuplicate,Nectar=0,delay=0,appletWidth,appletHeight;
+    public static int  s_index=0, d_index=0,latency=0,bandwidth=0, load=0, DR=0, NoDuplicate,delay=0,appletWidth,appletHeight;
     // dimensions of applet parameters
     public static int width,height,x_start,y_start, contactDuration[][];
     
