@@ -43,9 +43,9 @@ public void setPerimeters()
         {
             AgeCounter[m][n]=0;
             if(m==n)
-            dtnrouting.p[m][n]=1.0; //same node has 1 as predictibility value with itself
+            dtnrouting.p[m][n]=1.0; //same node has 1 as predictability value with itself
             else
-            dtnrouting.p[m][n]=0.0; //different nodes has 0 as initial predictibility value
+            dtnrouting.p[m][n]=0.0; //different nodes has 0 as initial predictability value
         }
    dtnrouting.CommentsTA.append("\nWARMUP PERIOD");
 }
@@ -54,11 +54,13 @@ public void setPerimeters()
 //UPON ENCOUNTER RAISE THE DELIVERY PREDICTABILITY
 
 @Override
-public void Encounter(int x,int y)  //x and y are sender and reciever nodes
+public void Encounter(int x,int y)  //x and y are sender and receiver nodes
 {
-    dtnrouting.p[x][y]=dtnrouting.p[x][y]+((1-dtnrouting.p[x][y])*p_encounter); //Setting probability of encountering between the two nodes
-    AgeCounter[x][y]=0;   //initially when two nodes are encountered its age counter is 0
-             //and when they go out of range its age increases gradually
+	//Setting probability of encountering between the two nodes
+    dtnrouting.p[x][y]=dtnrouting.p[x][y]+((1-dtnrouting.p[x][y])*p_encounter); 
+    //initially when two nodes are encountered its age counter is 0
+    //and when they go out of range its age increases gradually
+    AgeCounter[x][y]=0;     
 }
 
 //******************************************************************************
@@ -131,12 +133,12 @@ public void DeliverMessage(Node nx, Node ny)
           dtnrouting.delay=0;
       }
       warmFlag=true;
-    //if nx has packet and ny has to recieve it
+    //if nx has packet and ny has to receive it
    if(!nx.DestNPacket.isEmpty())
    {
     //Update the time spent by packets within a node nx
          nx. updatepacketTimestamp(nx);
-    //Transfer the bundels
+    //Transfer the packets
 
    for (Iterator<Map.Entry<Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
     {
@@ -144,18 +146,18 @@ public void DeliverMessage(Node nx, Node ny)
     Packet packetObj = entry.getKey();
     Node   destNode = entry.getValue();
           
-    //If destiantion has not enough size to recieve packet
+    //If destination has not enough size to receive packet
     //OR if its TTL is expired, , it packet cannot be sent
 
      if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
 
-    //If destiantion has enough size to recieve packet
+    //If destination has enough size to receive packet
     //and if its TTL is not expired, , it packet can be sent
     // if contact duration is enough to transfer the message
     else
-    if(packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1]){
+    if(packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]){
 
-    //If encountered Node has not yet recieved packet, packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
+    //If encountered Node has not yet received packet, packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
     if((ny.packetIDHash.contains(packetObj.packetName) == false) && (ny.queueSizeLeft > packetObj.packetSize) && (packetObj.ispacketDelivered == false) && (packetObj.packetTTL > 0))
     {
         if(ny==destNode)
@@ -165,6 +167,8 @@ public void DeliverMessage(Node nx, Node ny)
         ny.packetIDHash.add(packetObj.packetName);
         ny.queueSizeLeft-=packetObj.packetSize;
         ny.packetTimeSlots.put(packetObj.packetName,0);
+        dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
+        
         packetObj.ispacketDelivered=true;
         //update nx
         nx.queueSizeLeft+=packetObj.packetSize; // the whole space
@@ -184,6 +188,7 @@ public void DeliverMessage(Node nx, Node ny)
          ny.packetIDHash.add(packetObj.packetName);
          ny.queueSizeLeft-=packetObj.packetSize;
          ny.packetTimeSlots.put(packetObj.packetName,0);
+         dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
          packetObj.packetLoad+=1;
              //Display Result
          dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
@@ -195,7 +200,7 @@ public void DeliverMessage(Node nx, Node ny)
 
 }
 
-//Check whether forwading of packets have ended
+//Check whether forwarding of packets have ended
 checkForwardingEnds();
   }
 

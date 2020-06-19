@@ -47,31 +47,29 @@ public void DeliverMessage(Node nx, Node ny)
        Packet packetObj = entry.getKey();
        Node   destNode = entry.getValue();
 
-       //If destiantion has not enough size to recieve packet
+       //If destination has not enough size to recieve packet
         //OR if its TTL is expired, , it packet cannot be sent
 
          if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
 
-        //If destiantion has enough size to recieve packet
+        //If destination has enough size to receieve packet
         //and if its TTL is not expired, , it packet can be sent
         // if contact duration is enough to transfer the message
         else
-        if(packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1] && !ny.packetIDHash.contains(packetObj.packetName))
+        if(packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] && !ny.packetIDHash.contains(packetObj.packetName))
         {
                 //If encountered Node is destination and packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
-               if((packetObj.ispacketDelivered==false)&&(ny.queueSizeLeft-packetObj.packetSize>=0)&&(packetObj.packetTTL>0))
+               if((destNode==ny) && (packetObj.ispacketDelivered==false)
+                  &&(ny.queueSizeLeft-packetObj.packetSize>=0)
+            	  &&(packetObj.packetTTL>0))
                 {
-                   if(destNode==ny)
-                   {
-                          
-                           ny.DestNPacket.put(packetObj,null);
-                           deliverPacket(nx,ny,packetObj);
-                           packetObj.ispacketDelivered=true;
-                           i.remove();
-                           System.out.println(packetObj.packetName+" "+packetObj.packetLatency);
-                   }
-                 
-                 }
+            	   	ny.DestNPacket.put(packetObj,null);
+                    deliverPacket(nx,ny,packetObj);
+                    packetObj.ispacketDelivered=true;
+                    dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
+                    i.remove();
+                    System.out.println(packetObj.packetName+" "+packetObj.packetLatency);
+                }
 
          }
 

@@ -62,49 +62,51 @@ public void DeliverMessage(Node nx, Node ny)
         Map.Entry<Packet,Node> entry = i.next();
         Packet packetObj = entry.getKey();
         Node   destNode = entry.getValue();
-
-        //If destiantion has not enough size to recieve packet
+        transfer=false;
+        isDestination=false;
+        //If destination has not enough size to recieve packet
         //OR if its TTL is expired, , it packet cannot be sent
 
         if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
 
-        //If destination has enough size to recieve packet
+        //If destination has enough size to receive packet
         //and if its TTL is not expired, , it packet can be sent
         // if contact duration is enough to transfer the message
+        
         else
-        if(packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1] && !ny.packetIDHash.contains(packetObj.packetName))
+        if(packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] && !ny.packetIDHash.contains(packetObj.packetName))
         {
                 //If encountered Node is destination and packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
                if((packetObj.ispacketDelivered==false)&&(ny.queueSizeLeft-packetObj.packetSize>=0)&&(packetObj.packetTTL>0))
                 {
+            	   // if this is the destination node
                    if(destNode==ny)
                    {
-
-                           ny.DestNPacket.put(packetObj,null);
-                           deliverPacket(nx,ny,packetObj);
-                           packetObj.ispacketDelivered=true;
-                           i.remove();
+                	       transfer=true;
+                	       isDestination=true;
+                	       destNode=null;
+                         
                    }
+                   // If nx has same community as destination then use local ranking of ny
                    else if(communityLabel[nx.ID-1]==communityLabel[destNode.ID-1])
-                   {
-                        if((communityLabel[ny.ID-1]==communityLabel[destNode.ID-1]) &&
+                	    if((communityLabel[ny.ID-1]==communityLabel[destNode.ID-1]) &&
                             (localRanking[ny.ID-1]>localRanking[nx.ID-1]))
-                        {
-                               ny.DestNPacket.put(packetObj,destNode);
-                               deliverPacket(nx,ny,packetObj);
-                               i.remove();
-                        }
-
-                    }
+                            transfer=true;
+     
+                   //if ny has same community as destination node then us global ranking
                     else if((communityLabel[ny.ID-1]==communityLabel[destNode.ID-1])
-
-                            ||(globalRanking[ny.ID-1]>globalRanking[nx.ID-1]))
-                    {
-                           ny.DestNPacket.put(packetObj,destNode);
-                           deliverPacket(nx,ny,packetObj);
-                           i.remove();
-                    }
-            }
+                    		||(globalRanking[ny.ID-1]>globalRanking[nx.ID-1]))
+                    		transfer=true;
+                    
+                   
+                   //Transfer to carry on
+                   if(transfer) {
+                   dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]-=packetObj.packetSize;
+                   ny.DestNPacket.put(packetObj,destNode);
+                   deliverPacket(nx,ny,packetObj);
+                   i.remove();
+                   packetObj.ispacketDelivered=isDestination;}
+                }
 
         }
     

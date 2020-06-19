@@ -50,15 +50,15 @@ public void DeliverMessage(Node nx, Node ny)
         Map.Entry<Packet,Node> entry = i.next();
         Packet packetObj = entry.getKey();
         Node   destNode = entry.getValue();
-        //If destiantion has not enough size to recieve packet
+        //If destination has not enough size to receive packet
         //OR if its TTL is expired, , it packet cannot be sent
 
          if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
 
-        //If destiantion has enough size to recieve packet
+        //If destination has enough size to receive packet
         //and if its TTL is not expired, , it packet can be sent
         // if contact duration is enough to transfer the message
-        else if (packetObj.packetSize <= dtnrouting.contactDuration[nx.ID - 1][ny.ID - 1]) {
+        else if (packetObj.packetSize <= dtnrouting.linkCapacities[nx.ID - 1][ny.ID - 1]) {
         //If encountered Node is destination and packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
          if(packetObj.packetSize<=ny.queueSizeLeft && packetObj.ispacketDelivered==false && packetObj.packetDelivered==0)
         {
@@ -72,6 +72,8 @@ public void DeliverMessage(Node nx, Node ny)
                 ny.queueSizeLeft-=packetObj.packetSize;
                 ny.packetTimeSlots.put(packetObj.packetName,0);
                 packetObj.ispacketDelivered=true;
+                dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
+                
                 //update nx
                 nx.packetCopies.put(packetObj.packetName, bcopy-1);
                 if((bcopy-1)<1)
@@ -82,17 +84,21 @@ public void DeliverMessage(Node nx, Node ny)
         
             else if(ny.packetIDHash.contains(packetObj.packetName)==false)
             {
-                if(nx.packetCopies.get(packetObj.packetName)>1 )
+                if(nx.packetCopies.get(packetObj.packetName)>1)
+                if(ny.name.startsWith("R")||ny.name.startsWith("D"))
                 {
-                    if (ny.name.startsWith("R")||ny.name.startsWith("D"))
-                      {
-                                        int bcopy=nx.packetCopies.get(packetObj.packetName);
-                                        deliverPacket(nx, ny, destNode, packetObj);
-                                        ny.packetCopies.put(packetObj.packetName,bcopy/2);
-                                        nx.packetCopies.put(packetObj.packetName, bcopy/2);
-                                        dtnrouting.CommentsTA.append("\n"+nx.name+" ---> "+ny.name+":("+ny.packetCopies.get(packetObj.packetName)+") "+packetObj.packetName);
-                      }
-                }
+                       int bcopy=nx.packetCopies.get(packetObj.packetName);
+                       packetObj.packetBandwidth+=1;
+                       ny.DestNPacket.put(packetObj,destNode);
+                       ny.packetIDHash.add(packetObj.packetName);
+                       ny.packetTimeSlots.put(packetObj.packetName,0);
+                       
+                       ny.queueSizeLeft-=packetObj.packetSize;
+                       ny.packetCopies.put(packetObj.packetName,bcopy/2);
+                       nx.packetCopies.put(packetObj.packetName, bcopy/2);
+                       dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
+                       dtnrouting.CommentsTA.append("\n"+nx.name+" ---> "+ny.name+":("+ny.packetCopies.get(packetObj.packetName)+") "+packetObj.packetName);
+               }
 
             }
             //Display Result
@@ -100,21 +106,10 @@ public void DeliverMessage(Node nx, Node ny)
     } //End of for loop
 
     }
-    //Check whether forwading of packets have ended
+    //Check whether forwarding of packets have ended
     checkForwardingEnds();
     }
 }//end of deliver method
-
-
-public void deliverPacket(Node nx, Node ny, Node destNode,Packet packetObj)
-{         
-    packetObj.packetBandwidth+=1;
-    ny.DestNPacket.put(packetObj,destNode);
-    ny.packetIDHash.add(packetObj.packetName);
-    ny.packetTimeSlots.put(packetObj.packetName,0);
-    ny.queueSizeLeft-=packetObj.packetSize;
-    //update nx
-}  //end of method name
 
 //******************************************************************************
 

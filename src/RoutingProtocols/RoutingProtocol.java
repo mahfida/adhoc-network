@@ -16,9 +16,10 @@ public abstract class RoutingProtocol
 {
     //Instance Variables
     RP_Performance rpp=new RP_Performance();
-    public static int index=0,elements,latency[],load[],bw[],dr[];
-    public static double sd_latency=0,sd_load=0,sd_bw=0,sd_dr=0;
-    public abstract void Deliver(Node n1,Node n2);
+    public static int    index = 0, elements, latency[], load[], bw[], dr[];
+    public static double sd_latency = 0, sd_load = 0, sd_bw = 0, sd_dr = 0;
+    public abstract void Deliver(Node n1, Node n2);
+    public static boolean transfer=false, isDestination=false;
 
 //******************************************************************************
    

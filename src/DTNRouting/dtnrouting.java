@@ -26,27 +26,26 @@
 
 public class dtnrouting extends Applet implements Runnable
 {
-    /**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	// VARIABLES USED THROUGHOUT THE SIMULATION
-    public int i,radio;
-    public static long simulationTime=0;
+    public int i, radio;
+    public static long simulationTime = 0;
     //  source and destination indices declare static and other parameters are initially 0
-    public static int  s_index=0, d_index=0,latency=0,bandwidth=0, load=0, DR=0, NoDuplicate,delay=0,appletWidth,appletHeight;
+    public static int  s_index=0, d_index=0, latency=0, bandwidth=0, load=0, DR=0, NoDuplicate, delay=0, appletWidth, appletHeight;
     // dimensions of applet parameters
-    public static int width,height,x_start,y_start, contactDuration[][];
+    public static int width, height, x_start, y_start;
     
     // PERFORMANCE METTRICS
     // After multiple simulation averaging the results of the three metrics
-    public static int latency_avg=0,load_avg=0, bandwidth_avg=0,packetCounter=0,DR_avg=0, nodecount=0;
+    public static int latency_avg=0, load_avg=0, bandwidth_avg=0, packetCounter=0, DR_avg=0, nodecount=0;
    
     // Variables related to movement speeds
-    public static boolean random_movement=false,x_reached=false,y_reached=false;
-    public static boolean isdelivered=false,isIntersect=false,SIMULATION_ENDED=false,isRun=false;
-    public static String movementtype="Random", protocolName="";
-    public static int nodeNumber=-1, THIS_SIMULATION=4, TOTAL_SIMULATION_RUNS=4;
+    public static boolean random_movement=false, x_reached=false, y_reached=false;
+    public static boolean isdelivered=false, SIMULATION_ENDED=false, isRun=false;
+    public static String  movementtype="Random", protocolName="";
+    public static int     nodeNumber=-1, THIS_SIMULATION=4, TOTAL_SIMULATION_RUNS=4;
+	public static int     n1_neighborhood[][], n2_neighborhood[][]; //when there is a contact between two nodes
+	public static double  linkCapacities[][]; // if contact present then link capacity in bandwidth
     //RoutingProtocol.metrixArray(this.Sim); // USED TO ASSING ARRAYS OF ROUTTING PROTOCOL WHEN SIM IS HIGH
     
     //******************************************************************************
@@ -91,15 +90,14 @@ public class dtnrouting extends Applet implements Runnable
     JMenuItem NECTAR=new JMenuItem("NECTAR");
     JMenuItem MPRoPHET=new JMenuItem("MPRoPHET");
     JMenuItem CAoICD=new JMenuItem("CAoICD");
-    JMenu historyBased=new JMenu("History Based");
     JMenuItem Fresh=new JMenuItem("FRESH");
+    JMenu historyBased=new JMenu("History Based");
 
 //  Routing protocols based on social relationships
     JMenuItem SimBet=new JMenuItem("SimBet");
     JMenuItem BubbleRap=new JMenuItem("BubbleRap");
     JMenuItem CHRP=new JMenuItem("CHRP");
     JMenu socialRShip=new JMenu("Social Relation");
-
 
 //Node Movement Models
     JMenu nm_model=new JMenu("Movement Model");
@@ -113,7 +111,6 @@ public class dtnrouting extends Applet implements Runnable
     JMenu viewResults=new JMenu("View Resluts");
     JMenuItem performance=new JMenuItem("Performance Table");
     JMenuItem chart=new JMenuItem("Bar Chart");
-
 
 //******************************************************************************
 //Image Icons and RestButtons
@@ -131,10 +128,10 @@ public class dtnrouting extends Applet implements Runnable
 //******************************************************************************
 
 //Array Lists for storing different values
-    public static ArrayList<Node> allNodes=new ArrayList<Node>();
+    public static ArrayList<Node>   allNodes=new ArrayList<Node>();              // contains all nodes i.e source + destination + relay
     public static ArrayList<Packet> arePacketsDelivered=new ArrayList<Packet>();
-    public static ArrayList<Node> Sources=new ArrayList<Node>();
-    public static ArrayList<Node> Destinations=new ArrayList<Node>();
+    public static ArrayList<Node>   Sources=new ArrayList<Node>();				 // contains only source nodes
+    public static ArrayList<Node>   Destinations=new ArrayList<Node>();			 // contains only destination nodes
 
 //******************************************************************************
 
@@ -143,15 +140,14 @@ public class dtnrouting extends Applet implements Runnable
     Label rhist=new Label("ROUTING HISTORY" ,Label.CENTER);//create label on p2
     Label comments=new Label("Packet Transition Process" ,Label.LEFT);//create label on p2
     Label situation=new Label("Contact Opportunities" ,Label.LEFT);//create label on p2
-    Label NoSimulations=new Label("Simulation(s)", Label.LEFT); //it sets number of simulations
+    /*Label NoSimulations=new Label("Simulation(s)", Label.LEFT); //it sets number of simulations*/    
     Label rDetail=new Label("End Node Details", Label.CENTER);
 
 //******************************************************************************
 // TEXT AREAS USED IN SECOND PANEL
-
-    public static TextArea CommentsTA=new TextArea(" ");//Create Textarea on p2
-    public static TextArea currentSituatonTA=new TextArea(" ");//create Textarea  on p2
-    public static TextArea tDetail=new TextArea("Source    Dest.    packet");
+    public static TextArea CommentsTA=new TextArea(" ");						//create Textarea on p2
+    public static TextArea currentSituatonTA=new TextArea(" ");					//create Textarea on p2
+    public static TextArea tDetail=new TextArea("Src    Dst    Packet");   //create Textarea on p2
 
 //******************************************************************************
 
@@ -164,14 +160,14 @@ public void init()
 {
         setLayout(bl);      //set border layout
         setParameters();    //set parameters for GUI
-        addComponents2Panel1();
-        addComponents2Panel2();
+        addComponents_Panel1();
+        addComponents_Panel2();
         
 }
 
 //******************************************************************************
 
-public void addComponents2Panel1()
+public void addComponents_Panel1()
 {
         p1.setLayout(new GridLayout(2,1));
 
@@ -185,7 +181,7 @@ public void addComponents2Panel1()
         nodeMenu.setContentAreaFilled(false);
         nodeMenu.setOpaque(false);
         nodeMenu.setFont(new Font("Dialog",Font.PLAIN,10));
-        nodeMenu.addActionListener(new MyActionAdapter(this));
+        nodeMenu.addActionListener(new MyActionAdapter(this)); // when clicked on Node Button, it opens
 
         //Add packet menu  
         packetMenu.setSize(10, 10);
@@ -194,24 +190,43 @@ public void addComponents2Panel1()
         packetMenu.setOpaque(false);
         packetMenu.setFont(new Font("Dialog",Font.PLAIN,10));
         packetMenu.addActionListener(new MyActionAdapter(this));
-             
-        
+                    
         // Add contact oblivious routing protocols in contactOblivous menu item
         DDRP.setFont(new Font("Dialog",Font.PLAIN,10));
-        contactOblivious.add(DDRP);
         FC.setFont(new Font("Dialog",Font.PLAIN,10));
-        contactOblivious.add(FC);
         ERP.setFont(new Font("Dialog",Font.PLAIN,10));
-        contactOblivious.add(ERP);
-        SnWB.setFont(new Font("Dialog",Font.PLAIN,10));
-        contactOblivious.add(SnWB);
         SnWB.setFont(new Font("Dialog",Font.PLAIN,10));
         SnWN.setFont(new Font("Dialog",Font.PLAIN,10));
+        contactOblivious.add(DDRP);
+        contactOblivious.add(FC);
+        contactOblivious.add(ERP);
+        contactOblivious.add(SnWB);
         contactOblivious.add(SnWN);
-        contactOblivious.setFont(new Font("Dialog",Font.PLAIN,10));
-        //Add contactOblivious menu items to routing menu
-        routingMenu.add(contactOblivious);
+
+        //Add history based dtn routing protocols in historyBased menu item
+        PRoPHET.setFont(new Font("Dialog",Font.PLAIN,10));
+        MPRoPHET.setFont(new Font("Dialog",Font.PLAIN,10));
+        CAoICD.setFont(new Font("Dialog",Font.PLAIN,10));
+        Fresh.setFont(new Font("Dialog",Font.PLAIN,10));
+        historyBased.add(PRoPHET);
+        historyBased.add(MPRoPHET);
+        historyBased.add(CAoICD);
+        historyBased.add(Fresh);
+
+        //Add social relationship based dtn routing protocols in socialRShip menu item
+        SimBet.setFont(new Font("Dialog",Font.PLAIN,10));
+        BubbleRap.setFont(new Font("Dialog",Font.PLAIN,10));
+        socialRShip.add(SimBet);
+        socialRShip.add(BubbleRap);
+
+        //Setting Font Size and Adding contactOblivious, historyBased, socialRShip menu items to routing menu
         routingMenu.setFont(new Font("Dialog",Font.PLAIN,10));
+        contactOblivious.setFont(new Font("Dialog",Font.PLAIN,10));
+        historyBased.setFont(new Font("Dialog",Font.PLAIN,10));
+        socialRShip.setFont(new Font("Dialog",Font.PLAIN,10));
+        routingMenu.add(contactOblivious);
+        routingMenu.add(historyBased);
+        routingMenu.add(socialRShip);
 
         //Action Listener of contact oblivious routing protocols
         DDRP.addActionListener(new MyActionAdapter(this));
@@ -219,40 +234,17 @@ public void addComponents2Panel1()
         ERP.addActionListener(new MyActionAdapter(this));
         SnWB.addActionListener(new MyActionAdapter(this));
         SnWN.addActionListener(new MyActionAdapter(this));
-
-        //Add history based dtn routing protocols in historyBased menuitem
-        historyBased.setFont(new Font("Dialog",Font.PLAIN,10));
-        historyBased.add(PRoPHET);
-        PRoPHET.setFont(new Font("Dialog",Font.PLAIN,10));
-        historyBased.add(MPRoPHET);
-        MPRoPHET.setFont(new Font("Dialog",Font.PLAIN,10));
-        historyBased.add(CAoICD);
-        CAoICD.setFont(new Font("Dialog",Font.PLAIN,10));
-        historyBased.add(Fresh);
-        Fresh.setFont(new Font("Dialog",Font.PLAIN,10));
-        //Add contactOblivious menu items to routing menu
-        routingMenu.add(historyBased);
-
-        //Add social relationship based dtn routing protocols in socialRShip menuitem
-        socialRShip.setFont(new Font("Dialog",Font.PLAIN,10));
-        socialRShip.add(SimBet);
-        SimBet.setFont(new Font("Dialog",Font.PLAIN,10));
-        socialRShip.add(BubbleRap);
-        BubbleRap.setFont(new Font("Dialog",Font.PLAIN,10));
-        //Add socialRShip menu items to routing menu
-        routingMenu.add(socialRShip);
-
-        //Action Listener of social rship based routing protocols
-        SimBet.addActionListener(new MyActionAdapter(this));
-        BubbleRap.addActionListener(new MyActionAdapter(this));
-        CHRP.addActionListener(new MyActionAdapter(this));
-
         
         //Action Listener of contact Based routing protocols
         PRoPHET.addActionListener(new MyActionAdapter(this));
         MPRoPHET.addActionListener(new MyActionAdapter(this));
         CAoICD.addActionListener(new MyActionAdapter(this));
         Fresh.addActionListener(new MyActionAdapter(this));
+        
+        //Action Listener of social relationship based routing protocols
+        SimBet.addActionListener(new MyActionAdapter(this));
+        BubbleRap.addActionListener(new MyActionAdapter(this));
+        //CHRP.addActionListener(new MyActionAdapter(this));
 
         //Add different movement models in nm_model menu
         nm_model.setFont(new Font("Dialog",Font.PLAIN,10));
@@ -270,7 +262,6 @@ public void addComponents2Panel1()
         nm_mapBased.setEnabled(false);
         nm_mapBased.addActionListener(new MyActionAdapter(this));
 
-
         //Add Results Menu and its items
         viewResults.setFont(new Font("Dialog",Font.PLAIN,10));
         performance.setFont(new Font("Dialog",Font.PLAIN,10));
@@ -280,14 +271,18 @@ public void addComponents2Panel1()
         viewResults.add(chart);
         chart.addActionListener(new MyActionAdapter(this));
       
-        //setting border and name of run button
+        //setting border and name of "run, refresh, clear" button
         run.setBorder(runBorder);
         run.setActionCommand("Run");
-
-        //setting border and name of refresh button
         refresh.setBorder(refreshBorder);
         refresh.setActionCommand("Refresh");
-
+        clear.setBorder(clearBorder);
+        clear.setActionCommand("Clear");
+        //Register reset  button to the listener
+        run.addActionListener(new MyActionAdapter(this));
+        refresh.addActionListener(new MyActionAdapter(this));
+        clear.addActionListener(new MyActionAdapter(this));
+        
         //Adding Menus
         jmb.add(routingMenu);
         jmb.add(nodeMenu);
@@ -298,29 +293,18 @@ public void addComponents2Panel1()
         jmb.add(refresh);
         jmb.add(clear);
         
-
         p1.add(hd);
         p1.add(jmb);
-        
-        //Setting border and name of clear button
-        clear.setBorder(clearBorder);
-        clear.setActionCommand("Clear");
-   
-        //Register reset  button to the listener
-        run.addActionListener(new MyActionAdapter(this));
-        refresh.addActionListener(new MyActionAdapter(this));
-        clear.addActionListener(new MyActionAdapter(this));
         p1.setBackground(new Color(0xb0c4de));  //set the background color of p1
         p1.setPreferredSize(new Dimension(appletWidth,40));
         y_start=p1.getHeight()+50;
         height=appletHeight-y_start-130;//70;
-        add(p1, BorderLayout.PAGE_START);
-       
+        add(p1, BorderLayout.PAGE_START);       
 }
 
 //******************************************************************************
 
-public void addComponents2Panel2()
+public void addComponents_Panel2()
 {
         //set layout and dimension of p2
         p2.setLayout(new FlowLayout(FlowLayout.CENTER,2,2));
@@ -328,10 +312,10 @@ public void addComponents2Panel2()
 
         //set dimension for comments text area and add on p2
         rhist.setFont(new Font("San Serif", Font.BOLD,11));
-        rhist.setPreferredSize(new Dimension(140,30));//Set dimension for routing history label
-        CommentsTA.setPreferredSize(new Dimension(140,120));
-        currentSituatonTA.setPreferredSize(new Dimension(140,100));
-        tDetail.setPreferredSize(new Dimension(140,100));
+  //      rhist.setPreferredSize(new Dimension(140,30));//Set dimension for routing history label
+        CommentsTA.setPreferredSize(new Dimension(140,150));
+        currentSituatonTA.setPreferredSize(new Dimension(140,150));
+        tDetail.setPreferredSize(new Dimension(140,150));
 
         // Add components to panel p2
         p2.add(rhist);
@@ -358,7 +342,7 @@ public void setParameters()
 {
         setBackground(Color.white);  //set the rectangle color
         //Create an object of NodeMovement Class
-        nodemovement=new NodeMovement();
+        nodemovement = new NodeMovement();
         //Reset dimensions of width and height
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         appletHeight=(int)dim.getHeight();
@@ -382,27 +366,15 @@ public void start ()
 public void run()
 {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-        while (true)
-        {
+        while (true) {
         if(isRun==true)
-
-            try {
-                
-                nextPositionForMovement();
-                } catch (IOException ex) {
-                Logger.getLogger(dtnrouting.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                repaint();
+            try { nextPositionForMovement(); } 
+            catch (IOException ex) { Logger.getLogger(dtnrouting.class.getName()).log(Level.SEVERE, null, ex); }
+            repaint();
 
                         try
-                        {
-
-                        Thread.sleep(0,500);
-                        }
-                        catch (InterruptedException ex)
-                        {
-
-                        }
+                        { Thread.sleep(0,500); }
+                        catch (InterruptedException ex) { }
             Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
         }
 }
@@ -413,35 +385,18 @@ public void run()
 public void ExecuteProtocol()
 {
 		    isdelivered=false;
-		    dtnrouting.CommentsTA.insert(protocolName,0);
-		    if(protocolName.equals("Direct Delivery"))
-		        ob=new DirectDelivery();
-		
-		    else if (protocolName.equals("First Contact"))
-		        ob=new FirstContact();
-		  
-		    else if(protocolName.equals("Epidemic"))
-		        ob=new Epidemic();
-		
-		    else if(protocolName.equals("Spray&WaitB"))
-		        ob=new SprayAndWaitB();
-		      
-		    else if(protocolName.equals("Spray&WaitN"))
-		        ob=new SprayAndWaitN();
-		   
-		    else if(protocolName.equals("PRoPHET"))
-		        ob=new PRoPHET();
-		  
-		     else if(protocolName.equals("CAoICD"))
-		            ob=new CAoICD();
-		
-		    else if(protocolName.equals("FRESH"))
-		            ob=new FRESH();
-		    else if(protocolName.equals("SimBet"));
-		   
-		    else if(protocolName.equals("BubbleRap"))
-		            ob=new BubbleRap();
-
+		//    dtnrouting.CommentsTA.insert(protocolName,0);
+		    if(protocolName.equals("Direct Delivery"))      ob = new DirectDelivery();		
+		    else if (protocolName.equals("First Contact"))  ob = new FirstContact();		  
+		    else if(protocolName.equals("Epidemic"))        ob = new Epidemic();
+		    else if(protocolName.equals("Spray&WaitB"))     ob = new SprayAndWaitB();	      
+		    else if(protocolName.equals("Spray&WaitN"))     ob = new SprayAndWaitN();	   
+		    else if(protocolName.equals("PRoPHET"))         ob = new PRoPHET();	  
+		    else if(protocolName.equals("CAoICD"))          ob = new CAoICD();	
+		    else if(protocolName.equals("FRESH"))           ob = new FRESH();	   
+		    else if(protocolName.equals("BubbleRap"))       ob = new BubbleRap();		 
+	   //   else if(protocolName.equals("SimBet"))          ob = new SimBet(); 	
+		    
   }
 
 //******************************************************************************
@@ -457,16 +412,13 @@ public void update(Graphics g){
 public void paint(Graphics g){
  //resizes play fiEld dimensions accordingly and calls animation() function
         if(!getBounds().equals(rect)){
-                rect=this.getBounds();
-
-                bf = new BufferedImage( this.getWidth(),this.getHeight(), BufferedImage.TYPE_INT_RGB);
+                rect = this.getBounds();
+                bf   = new BufferedImage(this.getWidth(), this.getHeight(), BufferedImage.TYPE_INT_RGB);
         }
         try{
         animation(bf.getGraphics());
         g.drawImage(bf,0,0,null);
-        }catch(Exception ex){
-
-        }
+        }catch(Exception ex){ }
 } 
 
 //******************************************************************************
@@ -490,7 +442,7 @@ public void animation(Graphics g)
        {
        // Update the TTL field of all packets along with latency of the packet
             UpdateTTLandLatency();
-            playField.transferpacket();
+            playField.FindNeighborhoods();
             //Stores the time units elapsed in the simulation environment
             simulationTime+=1;
        }

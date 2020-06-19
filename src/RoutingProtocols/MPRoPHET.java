@@ -15,7 +15,7 @@ import java.util.Map;
 //MULTI-COPY PROPHET
 
 public class MPRoPHET extends PRoPHET{
-static double[][] AvgICDuration; //Average inter contact duration between any two nodes
+static double[][] AvgICDuration; //Average inter-contact duration between any two nodes
 int cases;
 public MPRoPHET()
     {
@@ -26,13 +26,13 @@ public void setPerimeters()
     {
     super.setPerimeters();
     AvgICDuration=new double[size][size];  // The average inter-contact duration between any two nodes
-        for(int m=0;m<size;m++)
+    for(int m=0;m<size;m++)
             for(int n=0;n<size;n++)
                       AvgICDuration[m][n]=0;
     }
 
 @Override
-public void Encounter(int x,int y)  //x and y are sender and reciever nodes
+public void Encounter(int x,int y)  //x and y are sender and receiver nodes
 {
 if(AgeCounter[x][y]>0) // The current inter-contact duration is stored in k
     {
@@ -43,7 +43,7 @@ if(AgeCounter[x][y]>0) // The current inter-contact duration is stored in k
         AvgICDuration[x][y]=AgeCounter[x][y]; //Maximum value of time lapse after which x and y encounters
 
     }
-super.Encounter(x, y);//to update preditibility value and set AgeCounter to zero
+super.Encounter(x, y);//to update predictibility value and set AgeCounter to zero
 }
 
 @Override
@@ -71,14 +71,16 @@ public void Deliver(Node nx,Node ny)
    {
     //Update the time spent by packets within a node nx
    nx. updatepacketTimestamp(nx);
-   //Transfer the bundels
+   
+   //Transfer the packets
    for (Iterator<Map.Entry<	Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
     {
         Map.Entry<Packet,Node> entry = i.next();
         Packet packetObj = entry.getKey();
         Node   destNode = entry.getValue();
-        if((packetObj.ispacketDelivered==false)   // if contact duration is enough to transfer the message
-        && (packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1]))
+        if((packetObj.ispacketDelivered==false)   
+        // if link capacity is enough to transfer the message
+        && (packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]))
         {
             //If destination encounters, hands over packet to it
             if(ny==destNode)
@@ -129,6 +131,7 @@ public void Deliver(Node nx,Node ny)
                    i.remove();
                    break;
                }
+            	dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
             	//Display Result
             	dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
             }

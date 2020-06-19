@@ -13,7 +13,7 @@ import javax.swing.WindowConstants;
 //START OF CLASS packet
 public class CreatePacket implements ActionListener
 {
-  public JFrame jf=new JFrame("Create packet");
+  /*public JFrame jf=new JFrame("Create packet");
   public Label lpacketNumber=new Label("No. of packets");
   public TextField tpacketNumber=new TextField("3");
   public Label lpacketTTL=new Label("TTL Value");
@@ -21,8 +21,8 @@ public class CreatePacket implements ActionListener
   public Label lpacketSize=new Label("Size (MB)");
   public TextField tpacketSize=new TextField("1");
   public Button ok=new Button("Add");
-  public Button close=new Button("Close");
-  public static int num_packets,ttl_packets,size_packets;
+  public Button close=new Button("Close");*/
+  public int num_packets,ttl_packets,size_packets;
   Random rand=new Random();
 
 //******************************************************************************
@@ -31,7 +31,7 @@ public CreatePacket(){}
 
 //******************************************************************************
 //packet FRAME GUI
-public void GenerateFrame()
+/*public void GenerateFrame()
 {
 	  jf.setLayout(new GridLayout(7,2,5,5));
 	  jf.add(lpacketNumber);  jf.add(tpacketNumber);
@@ -45,9 +45,9 @@ public void GenerateFrame()
 	  jf.setResizable(false);
 	  jf.setVisible(true);
 }
-
+*/
 //******************************************************************************
-
+/*
 public void actionPerformed(ActionEvent e)
 {
  String value=e.getActionCommand();
@@ -63,7 +63,7 @@ public void actionPerformed(ActionEvent e)
  }
 		
  
-}    
+} */   
 
 //******************************************************************************
 public void CreateMessageAtSource() {
@@ -72,15 +72,19 @@ public void CreateMessageAtSource() {
         	//Destination chooses its source randomly
         	int source_id = rand.nextInt(dtnrouting.Sources.size());
         	
-        	for(int j=0; j< num_packets; j++) {//number of packets that each source will transmit..
-           	   Packet p =new Packet();
-           	   Packet.packetID=Packet.packetID+1;
-           	     // increment the id of packet and then add it in tpacketNumber
+        	//Destination chooses number of packets randomly
+        	dtnrouting.Destinations.get(d).num_packets =rand.nextInt(10)+1;
+        	dtnrouting.Destinations.get(d).packets_ttl =rand.nextInt(1000)+200;
+        	
+        	for(int j=0; j< dtnrouting.Destinations.get(d).num_packets; j++) {//number of packets that each source will transmit..
+           	    Packet p =new Packet();
+           	    Packet.packetID=Packet.packetID+1;
+           	    // increment the id of packet and then add it in tpacketNumber
            	    p.packetName="p"+Packet.packetID; //packet Name for reference in code
            	    p.name="p"+(j+1);
            	    p.packet_color=new Color(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
-           	    p.packetTTL= p.maxTTL=ttl_packets;
-           	    p.packetSize=size_packets;
+           	    p.packetTTL= p.maxTTL=dtnrouting.Destinations.get(d).packets_ttl;
+           	    p.packetSize=1;// Make it static but can be changed
            	    dtnrouting.arePacketsDelivered.add(p);
         	
               if(dtnrouting.Sources.get(source_id).queueSizeLeft > p.packetSize)
@@ -97,6 +101,12 @@ public void CreateMessageAtSource() {
               dtnrouting.CommentsTA.append("\nSource "+ dtnrouting.Sources.get(source_id).ID+" has not enough space to occupy "+p.name);  
            }  //all packets of the destination assigned to the source of dest.     
 	    }     
+}
+
+@Override
+public void actionPerformed(ActionEvent e) {
+	// TODO Auto-generated method stub
+	
 }
 
 //******************************************************************************

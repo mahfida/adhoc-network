@@ -166,13 +166,11 @@ public void runSimulation()
     if(dtnrouting.ob!=null && !dtnrouting.movementtype.equals(" "))
     {
     
-     PlayField.isContactPresent=new boolean[dtnrouting.allNodes.size()][dtnrouting.allNodes.size()];
-     dtnrouting.contactDuration=new int[dtnrouting.allNodes.size()][dtnrouting.allNodes.size()];
-     for(int i=0;i<dtnrouting.allNodes.size();i++)
+        for(int i=0;i<dtnrouting.allNodes.size();i++)
         for(int j=0;j<dtnrouting.allNodes.size();j++)
         {
-            PlayField.isContactPresent[i][j] = false;
-            dtnrouting.contactDuration[i][j]=0;
+        	dtnrouting.n1_neighborhood[i][j] = 0;
+            dtnrouting.linkCapacities[i][j]=0.0;
         }
 
        if(MyActionAdapter.protocol.equals("ContactBased"))

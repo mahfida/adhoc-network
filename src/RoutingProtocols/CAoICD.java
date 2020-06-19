@@ -17,7 +17,7 @@ import java.util.Map;
 public class CAoICD extends RoutingProtocol
 {
     //Instance variables
-    boolean forward=false,warmFlag=false;
+    boolean warmFlag=false;
     public static int size;    //i and j are source and destination declared in main program
     long encounterDuration[][],noOfEncounters[][],lastPeriodStartTime[][],encounterTimeLeft[][],encounterPeriod[][],lastEncounterTime[][],timeLeftNx=-1,timeLeftNy=-1;
     double CAoICDuration[][];//stores the time passed since last encounter
@@ -172,51 +172,46 @@ public void DeliverMessage(Node nx, Node ny)
          Map.Entry<Packet,Node> entry = i.next();
          Packet packetObj = entry.getKey();
          Node   destNode = entry.getValue();
+         transfer=false;
          
-
-         //If destination has not enough size to receIve packet
+        //If destination has not enough size to receIve packet
         //OR if its TTL is expired, , it Packet cannot be sent
-         if(checkTTLandSize(nx,ny,destNode,packetObj));
+        if(checkTTLandSize(nx,ny,destNode,packetObj));
 
         //If destination has enough size to receive packet
         //and if its TTL is not expired, , it Packet can be sent
         // if contact duration is enough to transfer the message
-        else if(packetObj.packetSize <= dtnrouting.contactDuration[nx.ID - 1][ny.ID - 1])
+        else if(packetObj.packetSize <= dtnrouting.linkCapacities[nx.ID - 1][ny.ID - 1])
         {
-        
-        //If encountered Node has not yet received packet, Packet is yet not delivered,in ny's buffer enough space is free to occupy the Packet and Packet TTL is not expired
-        if((!ny.packetIDHash.contains(packetObj.packetName))&&(ny.queueSizeLeft>packetObj.packetSize)&&(packetObj.ispacketDelivered==false)&&(packetObj.packetTTL>0))
-        {
-            //if ny is destination
-            if(destNode.equals(ny))
-            {
-                ny.DestNPacket.put(packetObj,null);
-                packetObj.ispacketDelivered=true;
-                deliverPacket(nx,ny,packetObj);
-                i.remove();
-            }
-            //if ny is not a destination
-            else
-            {
-               minExpectedDelay(nx,ny,destNode);
-               if((CAoICDuration[ny.ID-1][destNode.ID-1]>-1)&&(timeLeftNx>timeLeftNy))
-               {
-                   forward = true;
-                
-               }
-               //Within same node Packet be forwarded to regular or fixed node
-                   if(forward &&(ny.name.startsWith("R")||(nx.name.startsWith("D"))))
-                   {
-                     packetObj.packetBandwidth+=1;
-                     ny.DestNPacket.put(packetObj, destNode);
-                     deliverPacket(nx,ny,packetObj);
-                     i.remove();
-                   }
-
-               }
-            forward=false;
-         }
-         }
+	        //If encountered Node has not yet received packet, Packet is yet not delivered,in ny's buffer enough space is free to occupy the Packet and Packet TTL is not expired
+	        if((!ny.packetIDHash.contains(packetObj.packetName))&&(ny.queueSizeLeft>packetObj.packetSize)&&(packetObj.ispacketDelivered==false)&&(packetObj.packetTTL>0))
+	        {
+	            //if ny is destination
+	            if(destNode.equals(ny))
+	            {
+	                ny.DestNPacket.put(packetObj,null);
+	                packetObj.ispacketDelivered=true;
+	                deliverPacket(nx,ny,packetObj);
+	                dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]-=packetObj.packetSize;
+	                i.remove();
+	            }
+	            
+	            //if ny is not a destination
+	            else
+	            {
+	               minExpectedDelay(nx,ny,destNode);
+	               if((CAoICDuration[ny.ID-1][destNode.ID-1]>-1)&&(timeLeftNx>timeLeftNy))
+	            	   transfer = true;
+	               
+	               //Within same node Packet be forwarded to regular or fixed node
+	               if(transfer &&(ny.name.startsWith("R")||(nx.name.startsWith("D"))))
+	                {
+	                     packetObj.packetBandwidth+=1;
+	                     ny.DestNPacket.put(packetObj, destNode);
+	                     dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]-=packetObj.packetSize;
+	                     deliverPacket(nx,ny,packetObj);
+	                     i.remove();
+	      }}}}
 
         }
 

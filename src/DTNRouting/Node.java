@@ -22,7 +22,7 @@ public class Node
     public HashMap <String, Integer> packetCopies=new HashMap<String, Integer>();
     public HashSet <String> packetIDHash=new HashSet<String>();
     public HashMap <Packet, Node> DestNPacket=new HashMap<Packet, Node>();
-    
+    public int num_packets, packets_ttl;
 //******************************************************************************
 //EMPTY CONSTRUCTOR
 public  Node() {

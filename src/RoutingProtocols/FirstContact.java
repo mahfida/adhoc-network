@@ -57,7 +57,7 @@ public void DeliverMessage(Node nx, Node ny)
             //and if its TTL is not expired, , it packet can be sent
             // if contact duration is enough to transfer the message
             else
-                if(packetObj.packetSize<=dtnrouting.contactDuration[nx.ID-1][ny.ID-1])
+                if(packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1])
                 {
 
                         //If encountered Node has not yet received packet, packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
@@ -84,6 +84,7 @@ public void DeliverMessage(Node nx, Node ny)
                                
                        
                             }
+                            dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
                         }
                  }
 
