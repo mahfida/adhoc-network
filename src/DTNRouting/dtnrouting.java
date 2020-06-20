@@ -31,9 +31,9 @@ public class dtnrouting extends Applet implements Runnable
     public int i, radio;
     public static long simulationTime = 0;
     //  source and destination indices declare static and other parameters are initially 0
-    public static int  s_index=0, d_index=0, latency=0, bandwidth=0, load=0, DR=0, NoDuplicate, delay=0, appletWidth, appletHeight;
+    public static int dataset_simulation_index=0, s_index=0, d_index=0, latency=0, bandwidth=0, load=0, DR=0, NoDuplicate, delay=0, appletWidth, appletHeight;
     // dimensions of applet parameters
-    public static int width, height, x_start, y_start;
+    public static int width, height, x_start, y_start, first_regular_node_index=0;
     
     // PERFORMANCE METTRICS
     // After multiple simulation averaging the results of the three metrics
@@ -104,7 +104,6 @@ public class dtnrouting extends Applet implements Runnable
     public static JMenuItem nm_random=new JMenuItem("Random");
     public static JMenuItem nm_prandom=new JMenuItem("Pseudorandom");
     public static JMenuItem nm_ds=new JMenuItem("Dataset");
-    public static JMenuItem nm_mapBased=new JMenuItem("MapBased");
     JMenuItem nm_crossroads=new JMenuItem("Cross Roads");
 
 // Result MenuItem
@@ -257,10 +256,6 @@ public void addComponents_Panel1()
         nm_ds.setFont(new Font("Dialog",Font.PLAIN,10));
         nm_model.add(nm_ds);
         nm_ds.addActionListener(new MyActionAdapter(this));
-        nm_mapBased.setFont(new Font("Dialog",Font.PLAIN,10));
-        nm_model.add(nm_mapBased);
-        nm_mapBased.setEnabled(false);
-        nm_mapBased.addActionListener(new MyActionAdapter(this));
 
         //Add Results Menu and its items
         viewResults.setFont(new Font("Dialog",Font.PLAIN,10));
@@ -285,9 +280,9 @@ public void addComponents_Panel1()
         
         //Adding Menus
         jmb.add(routingMenu);
-        jmb.add(nodeMenu);
-        jmb.add(packetMenu);
         jmb.add(nm_model); // Adding movement model menu in menu bar
+        jmb.add(nodeMenu);
+        jmb.add(packetMenu);    
         jmb.add(viewResults);
         jmb.add(run);
         jmb.add(refresh);
@@ -477,7 +472,11 @@ public void nextPositionForMovement() throws IOException
 	
 	    else if(movementtype.equals("Pseudorandom"))
 	    	 for(int i=0; i< allNodes.size();i++)
-	    		    allNodes.get(i).node_nm.PseudoRandomMovement(allNodes.get(i));
+	    		    allNodes.get(i).node_nm.Follow_PseudoRandomPath(allNodes.get(i));
+	   
+	    else if(movementtype.equals("Dataset"))
+	    	 for(int i=0; i< allNodes.size();i++)
+	    		    allNodes.get(i).node_nm.Follow_DatasetPath(allNodes.get(i));
 	
 }
 //******************************************************************************

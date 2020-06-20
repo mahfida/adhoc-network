@@ -9,8 +9,9 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.TextEvent;
 import java.awt.event.TextListener;
-import javax.swing.*;
+import java.io.IOException;
 
+import javax.swing.*;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -53,7 +54,7 @@ public class CreateNode extends dtnrouting  implements ItemListener, ActionListe
 
 //other variables
     public String nameofnode;
-
+    public DSPath objDSPath;
 //******************************************************************************
 
 //CONSTRUCTOR
@@ -74,12 +75,10 @@ public void GenerateFrame() {
         cqueuesize.add(l*10+"");
     }
             
-    cnType.add("Regular");
-    //Types of nodes in a map
-    subcategory.add("Driving"); 
-    subcategory.add("Cycling"); 
-    subcategory.add("Walking/Running");
-    subcategory.add("Static");
+    cnType.add("Synthetic");
+    cnType.add("Dataset");
+    subcategory.add("Static"); 
+   
     
          
     //Components in Frame window
@@ -116,36 +115,60 @@ public void GenerateFrame() {
 
 public void itemStateChanged(ItemEvent e)
 {
+	    Object b=e.getSource();
         //A regular node can be an end device, it can be either held by a
         //a pedestrian or installed by a car or tram
-        if(cnType.getSelectedItem().equals("Regular"))
+        if(b.toString().contains("Synthetic"))
         {
+        	subcategory.removeAll();
             nodeS.setEnabled(true);                regular_node.setEnabled(true);
             dest_node.setEnabled(true);
             nodesubcategory.setEnabled(true);      subcategory.setEnabled(true);
+            //Types of nodes in a map
+            subcategory.add("Static");
+            subcategory.add("Walking/Running");
+            subcategory.add("Cycling");   
+            subcategory.add("Driving");
         }
-        
+        // A real world dataset
+        else if(b.toString().contains("Dataset"))
+        {
+        	  subcategory.removeAll();
+        	  regular_node.setEnabled(false);
+        	  dest_node.setEnabled(true);
+        	  subcategory.setEnabled(true);
+        	  subcategory.add("St.Andrew Uni"); // 25 nodes	  
+              subcategory.add("iMote Traces");  // 36 nodes
+        	  cspeed.removeAll();
+        	  for(int j=1;j <= 15;j=j+2)
+           	  cspeed.add(j+"");
+        }
+       
        //Movement speeds
-       if(subcategory.getSelectedItem().equals("Walking/Running"))
+       if(b.toString().contains("Walking/Running"))
        {
     	    cspeed.removeAll();
             for(int j=1;j <= 5;j=j+1)
                 cspeed.add(j+"");
-       }else if(subcategory.getSelectedItem().equals("Cycling"))
+       }else if(b.toString().contains("Cycling"))
        {
     	    cspeed.removeAll();
             for(int j=10;j <= 25;j=j+2)
                 cspeed.add(j+"");
-       }else if(subcategory.getSelectedItem().equals("Driving"))
+       }else if(b.toString().contains("Driving"))
        {
     	    cspeed.removeAll();
             for(int j=40;j <= 80;j=j+10)
                 cspeed.add(j+"");
-       }else if(subcategory.getSelectedItem().equals("Static")){
+       }else if(b.toString().contains("Static")){
     	    cspeed.removeAll();
         	cspeed.add(0+"");
-       }
+       }else if(b.toString().contains("St.Andrew Uni"))
+    	   regular_node.setText("25");
+       else if(b.toString().contains("iMote Traces"))
+    	   regular_node.setText("36");
 
+     
 }
 
 //******************************************************************************
@@ -187,7 +210,7 @@ public void actionPerformed(ActionEvent e)
                JOptionPane.showMessageDialog(jf,"Put number of nodes");
            else
            {
-
+        	    first_regular_node_index=dtnrouting.allNodes.size();
                 for (int l=0;l<Integer.parseInt(regular_node.getText());l++)
                 {
                 Node node=new Node();
@@ -199,7 +222,34 @@ public void actionPerformed(ActionEvent e)
                 node.setRadioRange(Integer.parseInt(cradiorange.getSelectedItem()));
                 node.wholeQueueSize=node.queueSizeLeft=Integer.parseInt(cqueuesize.getSelectedItem());
                 dtnrouting.allNodes.add(node);
-                }          
+                }  
+                
+                // If from data sets
+                if(subcategory.equals("St.Andrew Uni")) 
+                {
+                	objDSPath = new DSPath("Datasets\\SA6.txt",25);
+                	try {
+                		dtnrouting.dataset_simulation_index = rand.nextInt(dtnrouting.allNodes.get(dtnrouting.first_regular_node_index).x_coord.size());
+						objDSPath.Paths_allNodes();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+                }
+                
+                else if(subcategory.equals("iMote Traces")) 
+                {
+                	objDSPath = new DSPath("Datasets\\ITC6.txt",25);
+                	try {
+                		dtnrouting.dataset_simulation_index = rand.nextInt(dtnrouting.allNodes.get(dtnrouting.first_regular_node_index).x_coord.size());
+						objDSPath.Paths_allNodes();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+                }
+      
+                
 		                 
 		    }
               
@@ -209,7 +259,7 @@ public void actionPerformed(ActionEvent e)
     	   else
     		 {
     			 
-    		  // Randomly choose the destination nodes
+    		     // Randomly choose the destination nodes
     			 int total_size = dtnrouting.allNodes.size();
     			 int s=Integer.parseInt(dest_node.getText());
     			 if(s > total_size)

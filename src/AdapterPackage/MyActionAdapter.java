@@ -44,6 +44,8 @@ public void actionPerformed (ActionEvent ae)
 // MOBILITY PATTERN
  if(buttonname.equals("Pseudorandom"))
      dtnrouting.movementtype="Pseudorandom";
+ if(buttonname.equals("Dataset"))
+     dtnrouting.movementtype="Dataset";
    
 // CREATE NODE   
     else if (buttonname.equals("Node"))

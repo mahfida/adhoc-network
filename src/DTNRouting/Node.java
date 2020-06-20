@@ -12,17 +12,24 @@ public class Node
 	public static int ID_INCREMENTER;
     public ArrayList<Integer> x_coord = new ArrayList<Integer>();
     public ArrayList<Integer> y_coord = new ArrayList<Integer>();
-    public int ID, x_inc=0,y_inc=0,nodeX,nodeY,positionTracker,direction=1;
+   //probability of following a coordinate pair
+    public ArrayList<Double>  prob_coord = new ArrayList<Double>();
+    public int ID, x_inc=0,y_inc=0,nodeX,nodeY,positionTracker;
+    // Used to follow part of a data set part
+    public int startTracker,direction=1;
     public int queueSizeLeft, wholeQueueSize,radioRange,speed=0,nodeTracker=0;
     public String name; 
     public NodeMovement node_nm;
-    
+  
     //packet related properties of a node
     public HashMap <String, Integer> packetTimeSlots=new HashMap<String, Integer>();
     public HashMap <String, Integer> packetCopies=new HashMap<String, Integer>();
     public HashSet <String> packetIDHash=new HashSet<String>();
     public HashMap <Packet, Node> DestNPacket=new HashMap<Packet, Node>();
     public int num_packets, packets_ttl;
+    
+    // When node is from Datasets
+    public int nodePath[][],x_max,y_max;
 //******************************************************************************
 //EMPTY CONSTRUCTOR
 public  Node() {

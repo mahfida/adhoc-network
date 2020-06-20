@@ -14,11 +14,11 @@ public class UpdateInformation {
     //Instance Variables
 	RoutingProtocol rp;
     RP_Performance rpp=new RP_Performance();
-   
+    Random rand;
 
 //******************************************************************************
 //Constructor
-public void UpdateInformation() {}
+public UpdateInformation() {}
 
 //******************************************************************************
 //Reset all the settings when refresh button is clicked
@@ -128,7 +128,7 @@ public void setPerimeters()
         dtnrouting.isRun=false;        
         
         dtnrouting.THIS_SIMULATION=dtnrouting.THIS_SIMULATION-1; //Decrement Sim
-        
+        dtnrouting.dataset_simulation_index = rand.nextInt(dtnrouting.allNodes.get(dtnrouting.first_regular_node_index).x_coord.size());
         //Updating packet perimeters
         for(int h=0;h<dtnrouting.arePacketsDelivered.size();h++)
         dtnrouting.arePacketsDelivered.get(h).refreshPacketSettings();
