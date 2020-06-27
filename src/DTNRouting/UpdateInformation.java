@@ -2,10 +2,20 @@
 package DTNRouting;
 
 //IMPORT PACKAGES
-import AdapterPackage.MyActionAdapter;
 import Results.*;
 import RoutingProtocols.RoutingProtocol;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.io.IOException;
 import java.util.Random;
+
+
+
+import AdapterPackage.MyActionAdapter;
 
 //******************************************************************************
 // CLASS MADE FOR UPDATING THE INFORMATION DURING SIMULATION
@@ -15,18 +25,122 @@ public class UpdateInformation {
 	RoutingProtocol rp;
     RP_Performance rpp=new RP_Performance();
     Random rand;
+    PrintWriter writer=null;
+    private StringBuilder sb = new StringBuilder();
+    private static DecimalFormat df2 = new DecimalFormat("#.##");
 
 //******************************************************************************
 //Constructor
-public UpdateInformation() {}
+public UpdateInformation(){
+}
+
 
 //******************************************************************************
-//Reset all the settings when refresh button is clicked
+//Update TTL and packet Latency
+public void UpdateTTLandLatency()
+{   
+      df2.setRoundingMode(RoundingMode.DOWN);
+	  dtnrouting.delay=dtnrouting.delay+1;
+      for(int h=0;h < dtnrouting.arePacketsDelivered.size();h++)
+      {
+          Packet packetObj=dtnrouting.arePacketsDelivered.get(h);
+          packetObj.packetTTL-=1;
+          
+          if(packetObj.isTTLExpired == false && packetObj.ispacketDelivered==false) {
+                  packetObj.packetLatency=dtnrouting.delay;
+          
+          if(packetObj.packetTTL==0){
+          //if packet's TTL expires, it cannot be delivered else if
+            packetObj.isTTLExpired=true;
+            //System.out.println(packetObj.packetName + " is expired");
+            dtnrouting.NumPacketsDeliverExpired += 1;}}
+      }
+      
+     
+     if(dtnrouting.NumPacketsDeliverExpired==dtnrouting.arePacketsDelivered.size())
+     {
+    	 
+  
+
+	      // STOP SIMULATION 
+
+	      for(int h=0;h<dtnrouting.Destinations.size();h++)
+	      {
+	    	  double expired = 0;
+	    	  for(int m=0; m < dtnrouting.Destinations.get(h).nodePackets.size(); m++)
+	    	  {
+	    		  dtnrouting.Destinations.get(h).msg_latency+=dtnrouting.Destinations.get(h).nodePackets.get(m).packetLatency;
+	    		  dtnrouting.Destinations.get(h).msg_hops+=dtnrouting.Destinations.get(h).nodePackets.get(m).packetHops;  
+	    		  dtnrouting.Destinations.get(h).msg_relibility+=dtnrouting.Destinations.get(h).nodePackets.get(m).packetReliability;
+	    		  if(dtnrouting.Destinations.get(h).nodePackets.get(m).ispacketDelivered) 
+	    		    dtnrouting.Destinations.get(h).msg_dl+=1;
+	    		  if(dtnrouting.Destinations.get(h).nodePackets.get(m).isTTLExpired)
+	    			  expired +=1;
+	    	  }
+	    	  
+	    	  dtnrouting.Destinations.get(h).msg_latency = (double)dtnrouting.Destinations.get(h).msg_latency / dtnrouting.Destinations.get(h).nodePackets.size();
+	    	  dtnrouting.Destinations.get(h).msg_hops = (int)dtnrouting.Destinations.get(h).msg_hops / dtnrouting.Destinations.get(h).nodePackets.size();
+	    	  dtnrouting.Destinations.get(h).msg_dl =  (double)dtnrouting.Destinations.get(h).msg_dl / dtnrouting.Destinations.get(h).nodePackets.size();
+	    	  dtnrouting.Destinations.get(h).msg_relibility = (double)dtnrouting.Destinations.get(h).msg_relibility / dtnrouting.Destinations.get(h).nodePackets.size();
+	  	      
+	    	  if(sb.length()==0)
+	    	  sb.append("simulation_run, dest,  latency, hop , delivery, failure, reliability\n");
+			  
+	  	      sb.append(
+	  	      (dtnrouting.TOTAL_SIMULATION_RUNS-dtnrouting.SIMULATION_N0 +1) + ", " +
+			  (h+1) + ", " + df2.format(dtnrouting.Destinations.get(h).msg_latency)+ ", " +
+			  dtnrouting.Destinations.get(h).msg_hops + ", " +
+			  df2.format(dtnrouting.Destinations.get(h).msg_dl)+  ", " +
+			  df2.format(expired/dtnrouting.Destinations.get(h).nodePackets.size())+  ", " +
+			  df2.format(dtnrouting.Destinations.get(h).msg_relibility)+"\n");
+	  	      
+	  	      }
+	  
+	       dtnrouting.THIS_SIMULATION_ENDED=true;
+	    
+	        // Add to file 
+	    	//First simulation run
+	    	if(dtnrouting.SIMULATION_N0==dtnrouting.TOTAL_SIMULATION_RUNS) {
+	    	     try {
+	    	     writer = new PrintWriter(new File("/Users/mahrukh/manet_results.csv"));
+	    	      } catch (FileNotFoundException e) {
+	    	            e.printStackTrace();}}
+
+	    	//Last simulation run 
+	    	if(dtnrouting.SIMULATION_N0==1) {
+	    		writer.write(sb.toString());
+	    		writer.flush();
+	    		writer.close();}
+   
+     }
+}
+
+//******************************************************************************
+
+public void nextPositionForMovement() throws IOException
+{
+	//NODE MOVEMENT
+		if(dtnrouting.movementtype.equals("Random"))
+	    for(int i=0; i< dtnrouting.allNodes.size();i++)
+	    	     dtnrouting.allNodes.get(i).node_nm.RandomMovement(dtnrouting.allNodes.get(i));
+	
+	    else if(dtnrouting.movementtype.equals("Pseudorandom"))
+	    	 for(int i=0; i< dtnrouting.allNodes.size();i++)
+	    		 dtnrouting.allNodes.get(i).node_nm.Follow_PseudoRandomPath(dtnrouting.allNodes.get(i));
+	   
+	    else if(dtnrouting.movementtype.equals("Dataset"))
+	    	 for(int i=0; i< dtnrouting.allNodes.size();i++)
+	    		 dtnrouting.allNodes.get(i).node_nm.Follow_DatasetPath(dtnrouting.allNodes.get(i));
+	
+}
+
+//******************************************************************************
+/*Reset all the settings when refresh button is clicked
 public void RefreshSettings()
 { 
-	 dtnrouting.THIS_SIMULATION=dtnrouting.TOTAL_SIMULATION_RUNS;
+	 dtnrouting.SIMULATION_N0=dtnrouting.TOTAL_SIMULATION_RUNS;
      UpdateNodeArray();
-     dtnrouting.ob=null; dtnrouting.isRun=false;
+     dtnrouting.ob=null; dtnrouting.SIMULATION_RUNNING=false;
 
      //Movement Paths
      if(dtnrouting.movementtype.equals("Pseudorandom"))
@@ -41,142 +155,104 @@ public void RefreshSettings()
      //Empty text areas lying in bottom panel
      dtnrouting.CommentsTA.setText(" "); dtnrouting.currentSituatonTA.setText(" ");
  }
-
+*/
 //******************************************************************************
 //Clear all the settings when clear (eraser) button is clicked
 
-public void ClearSettings()
+public void clearSettings()
 {
-       
+	    dtnrouting.ob=null; 
         dtnrouting.allNodes.clear();
         Node.ID_INCREMENTER=0;
+        dtnrouting.simulationTime=0;
+        dtnrouting.NumPacketsDeliverExpired=0;
         
-        //Clearings the arraylists of source, destination, their packets and their parameter
-        dtnrouting.Sources.clear();     dtnrouting.Destinations.clear();
-        dtnrouting.arePacketsDelivered.clear();
-        dtnrouting.latency=dtnrouting.delay=dtnrouting.latency_avg=0;
-        dtnrouting.load=dtnrouting.load_avg=dtnrouting.bandwidth=dtnrouting.bandwidth_avg=0;
-        dtnrouting.DR_avg=dtnrouting.DR=0;
-
+        //Clearings the array lists of source, destination, their packets and their parameter
+        dtnrouting.Sources.clear();     
+        dtnrouting.Destinations.clear();
         //Set movement model to null
-        dtnrouting.movementtype=" ";
-        //dtnrouting.endNodes.setEnabled(false);
+        dtnrouting.movementtype="Random";
+        dtnrouting.arePacketsDelivered.clear();
+        dtnrouting.SIMULATION_N0 = dtnrouting.TOTAL_SIMULATION_RUNS;
+        Packet.packetID=0; 
+               
         //Empty Text areas
-        dtnrouting.CommentsTA.setText("");
-        dtnrouting.currentSituatonTA.setText("");
-        dtnrouting.tDetail.setText("Source    Dest.    packet");
+        dtnrouting.sdpTA.setText("Source    Dest.    packet");
+        dtnrouting.contactsTA.setText("");
+        dtnrouting.transferTA.setText("");
+        dtnrouting.deliveryTA.setText("");
         rpp.clearData(); //clear data from table and charts
-        dtnrouting.isRun=false;
+        dtnrouting.THIS_SIMULATION_ENDED=false;
+        dtnrouting.SIMULATION_RUNNING=false;
+        
 }
 
 //******************************************************************************
-//When a simulation completes
-
+//When a simulation run completes
 public void simulationSettings(dtnrouting dtn)
 {
-    setPerimeters();
-    if(dtnrouting.THIS_SIMULATION<=0)  //Display the result and end Simulation
-    	FinalResult();
-    
-    else if(dtnrouting.THIS_SIMULATION>0)  //When a simulation run ends, update the average results
-    {
-       UpdateNodeArray();
-       dtnrouting.CommentsTA.setText(" ");
-       dtnrouting.currentSituatonTA.setText(" ");
-       
-       //Take a break of one second
-       try
-         { Thread.sleep(1000);
-         } catch (InterruptedException ex) {}
+	//ob points to not any routing protocols......
+	dtnrouting.ob=null;   
+	dtnrouting.SIMULATION_N0=dtnrouting.SIMULATION_N0-1; 
+    //dtnrouting.dataset_simulation_index = rand.nextInt(dtnrouting.allNodes.get(dtnrouting.first_regular_node_index).x_coord.size());
+    dtnrouting.simulationTime=0;
+  
 
-        dtn.ExecuteProtocol();
-        if(dtnrouting.movementtype.equals("Pseudorandom"))
-            for(int i=0; i< dtnrouting.allNodes.size(); i++)
-            if(dtnrouting.allNodes.get(i).name.substring(0,1).equals("R"))
-           	dtnrouting.allNodes.get(i).node_nm.InitializePsuedoPath(dtnrouting.allNodes.get(i));
-         
-        runSimulation();
+    dtnrouting.NumPacketsDeliverExpired=0;
+    dtnrouting.sdpTA.setText("Source    Dest.    packet");
+    dtnrouting.contactsTA.setText("");
+    dtnrouting.transferTA.setText("");
+    
+    
+    //...Display the result when all SIMULATIONS END
+    if(dtnrouting.SIMULATION_N0==0)  
+    	dtnrouting.SIMULATION_RUNNING=false;
+
+   
+    //...When a simulation run ends, update the average results
+    else if(dtnrouting.SIMULATION_N0>0)  
+    {
+    	
+        	//Remove packets and destination information from nodes
+        	for(int g=0;g<dtnrouting.allNodes.size();g++)
+        		dtnrouting.allNodes.get(g).refreshNodeSettings();
+           
+           //Clear all packets and generate messages again
+           dtnrouting.arePacketsDelivered.clear();
+           Packet.packetID=0;
+	       
+	       //Take a break of one second
+	       try
+	         { Thread.sleep(1000);
+	         } catch (InterruptedException ex) {}
+	
+	        dtn.ExecuteProtocol();
+	        if(dtnrouting.movementtype.equals("Pseudorandom"))
+	            for(int i=0; i< dtnrouting.allNodes.size(); i++)
+	            if(dtnrouting.allNodes.get(i).name.substring(0,1).equals("R"))
+	           	dtnrouting.allNodes.get(i).node_nm.InitializePsuedoPath(dtnrouting.allNodes.get(i));
+	        
+	        //Generate packets again and assign sources/destinations
+	        CreatePacket cp = new CreatePacket();
+	        cp.CreateMessageAtSource();
+	        dtnrouting.deliveryTA.setText("");
+	        //System.out.println(dtnrouting.arePacketsDelivered.size());
+	        runSimulation();
     }
 }//end of the method
-//******************************************************************************
-// Reset Settings
-public void UpdateNodeArray()
-{
-
-    //Remove packets and destination information from nodes
-    for(int g=0;g<dtnrouting.allNodes.size();g++)
-    {
-        Node n=dtnrouting.allNodes.get(g);
-        n.packetIDHash.clear();     n.queueSizeLeft=n.wholeQueueSize;
-        n.DestNPacket.clear();      n.node_nm.InitialNodePositions(n);
-
-    }
-
-    //Clear all packets
-    dtnrouting.arePacketsDelivered.clear();
-    //Generate packets again and assign sources/destinations
-    CreatePacket cp = new CreatePacket();
-    cp.CreateMessageAtSource();
-}//End of method
-
-//******************************************************************************
-//After a simulation runs end calculate end result and clear tracking variables
-
-public void setPerimeters()
-{
-        dtnrouting.ob=null; //ob poins to not any routing protocols
-        dtnrouting.isRun=false;        
-        
-        dtnrouting.THIS_SIMULATION=dtnrouting.THIS_SIMULATION-1; //Decrement Sim
-        dtnrouting.dataset_simulation_index = rand.nextInt(dtnrouting.allNodes.get(dtnrouting.first_regular_node_index).x_coord.size());
-        //Updating packet perimeters
-        for(int h=0;h<dtnrouting.arePacketsDelivered.size();h++)
-        dtnrouting.arePacketsDelivered.get(h).refreshPacketSettings();
-
-        //Value of Perimeters after a simulation run completes
-        dtnrouting.latency_avg+=dtnrouting.latency;
-        dtnrouting.load_avg+=dtnrouting.load;
-        dtnrouting.bandwidth_avg+=dtnrouting.bandwidth;
-        dtnrouting.DR_avg+=dtnrouting.DR;
-        dtnrouting.load=dtnrouting.bandwidth=dtnrouting.latency=dtnrouting.DR=0;
-        dtnrouting.SIMULATION_ENDED=false;
-}
-
-//******************************************************************************
-//Provide final result to the result table and the graph
-
-public void FinalResult()
- {
-    dtnrouting.SIMULATION_ENDED=false;
-    dtnrouting.CommentsTA.append("\n\nAverage Result:\n");
-    dtnrouting.CommentsTA.append("Latency: "+dtnrouting.latency_avg/dtnrouting.TOTAL_SIMULATION_RUNS+",Load: "+dtnrouting.load_avg/dtnrouting.TOTAL_SIMULATION_RUNS+"\nLinks: "+dtnrouting.bandwidth_avg/dtnrouting.TOTAL_SIMULATION_RUNS+",DR: "+dtnrouting.DR_avg/dtnrouting.TOTAL_SIMULATION_RUNS);
-    RoutingProtocol.standardDeviation(dtnrouting.latency_avg/dtnrouting.TOTAL_SIMULATION_RUNS,dtnrouting.load_avg/dtnrouting.TOTAL_SIMULATION_RUNS,dtnrouting.bandwidth_avg/dtnrouting.TOTAL_SIMULATION_RUNS,dtnrouting.DR_avg/dtnrouting.TOTAL_SIMULATION_RUNS);
-    rpp.setAvgData(dtnrouting.protocolName,dtnrouting.latency_avg/dtnrouting.TOTAL_SIMULATION_RUNS,dtnrouting.load_avg/dtnrouting.TOTAL_SIMULATION_RUNS,dtnrouting.bandwidth_avg/dtnrouting.TOTAL_SIMULATION_RUNS,dtnrouting.DR_avg/dtnrouting.TOTAL_SIMULATION_RUNS);
- 
- }
-
-//******************************************************************************
-
-
 
 //******************************************************************************
 
 public void runSimulation()
 {
-    if(dtnrouting.ob!=null && !dtnrouting.movementtype.equals(" "))
+    if(dtnrouting.ob!=null)
     {
-    
-        for(int i=0;i<dtnrouting.allNodes.size();i++)
-        for(int j=0;j<dtnrouting.allNodes.size();j++)
-        {
-        	dtnrouting.n1_neighborhood[i][j] = 0;
-            dtnrouting.linkCapacities[i][j]=0.0;
-        }
 
        if(MyActionAdapter.protocol.equals("ContactBased"))
             {
                 dtnrouting.ob.setPerimeters();
             }
+     
      //Number of packet copies generated when Spray and WaitB is selected
      if(dtnrouting.protocolName.equals("Spray&WaitB"))
      {
@@ -186,8 +262,8 @@ public void runSimulation()
            r=Math.random();    //random function set the value of r between 0 and 1
            r=(int)(Math.ceil(3*r));  //multiply r with 3 so that the power of 2 go to 3 and then ceil it
            dtnrouting.arePacketsDelivered.get(k).packetLoad=(int)Math.pow(2,r); //take r as power of 2 and assign it to NoDuplicate
-           dtnrouting.Sources.get(k).packetCopies.put(dtnrouting.arePacketsDelivered.get(k).name,dtnrouting.arePacketsDelivered.get(k).packetLoad );
-           dtnrouting.CommentsTA.append("\nCopies Generated by "+dtnrouting.Sources.get(k).ID+" : "+dtnrouting.arePacketsDelivered.get(k).packetLoad);
+           dtnrouting.Sources.get(k).packetCopies.put(dtnrouting.arePacketsDelivered.get(k).packetName,dtnrouting.arePacketsDelivered.get(k).packetLoad );
+           dtnrouting.sdpTA.append("\nCopies Generated by "+dtnrouting.Sources.get(k).ID+" : "+dtnrouting.arePacketsDelivered.get(k).packetLoad);
        }
      }
 
@@ -199,12 +275,13 @@ public void runSimulation()
        for(int k=0;k<dtnrouting.Sources.size();k++)
        {
            dtnrouting.arePacketsDelivered.get(k).packetLoad=rand.nextInt(10)+1; //random function set the value of r between 1 and 10
-           dtnrouting.Sources.get(k).packetCopies.put(dtnrouting.arePacketsDelivered.get(k).name,dtnrouting.arePacketsDelivered.get(k).packetLoad );
-           dtnrouting.CommentsTA.append("\nCopies Generated by "+dtnrouting.Sources.get(k).ID+" : "+dtnrouting.arePacketsDelivered.get(k).packetLoad);
+           dtnrouting.Sources.get(k).packetCopies.put(dtnrouting.arePacketsDelivered.get(k).packetName,dtnrouting.arePacketsDelivered.get(k).packetLoad );
+           dtnrouting.sdpTA.append("\nCopies Generated by "+dtnrouting.Sources.get(k).ID+" : "+dtnrouting.arePacketsDelivered.get(k).packetLoad);
        }
     }
     dtnrouting.delay=0;
-    dtnrouting.isRun=true;
+    dtnrouting.THIS_SIMULATION_ENDED=false;
+    dtnrouting.SIMULATION_RUNNING=true;
     
     }
 }

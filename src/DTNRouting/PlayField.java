@@ -37,7 +37,6 @@ public class PlayField
 			Node n=new Node();
 			n=dtnrouting.allNodes.get(k);
 			int r=n.getRadioRange();  //set the size of nodes
-			r=r/2;
 			g2.setStroke(new BasicStroke(3));
 			g.setColor(Color.black);
 
@@ -58,7 +57,7 @@ public class PlayField
 			//Show whether packet is present: for one packet only
 			if(!n.DestNPacket.isEmpty())
 			{
-
+				 //System.out.println("PLAY" + dtnrouting.delay);
 				//int b=n.DestNPacket.size();
 				Set<Packet> setPacket=n.DestNPacket.keySet();
 				Iterator<Packet> it=setPacket.iterator();
@@ -67,18 +66,16 @@ public class PlayField
 				while(it.hasNext())
 				{
 					Packet packetObj=(Packet)it.next();
-					g.setColor(packetObj.packet_color);
-					g.fillOval(x, y, 10, 10);
+					if(packetObj.isTTLExpired==true)
+						g.setColor(Color.RED);
+					else if(packetObj.ispacketDelivered==true)
+						g.setColor(Color.GREEN);
+					else
+						g.setColor(Color.BLUE);
+					//g.drawString(packetObj.packetName.substring(1)+",", x-40, y+15);
+					g.fillOval(x-40, y+15, 10, 10);
 
-					//If packet is expired or large enough to be stored inside a node then discard it
-					if(packetObj.isTTLExpired==true ||packetObj.isLargeSize==true )
-					{
-
-						g.setColor(Color.BLACK);
-						g2.drawLine(x,y,x+10,y+10);
-						g2.drawLine(x+10,y,x,y+10);
-
-					}
+					
 					//If node has more than one packet then next packet is displayed
 					//near the earlier one in the same node
 					x=x+11;
@@ -110,12 +107,11 @@ public class PlayField
 		double distance_km = Math.sqrt(Math.pow((y2-y1),2) + Math.pow((x2-x1),2));
 		double r = r1 + r2;
 
-		/*		System.out.println(ni.nodeX + ", " + ni.nodeY + ", " + ni.getRadioRange() + "; " + nj.nodeX + ", " + nj.nodeY + ", " + nj.getRadioRange()); 
-		System.out.println(x1 + ", " + y1 + ", " + r1 + "; " + x2 + ", " + y2 + ", " + r2);
-		System.out.println(r + ", " + distance_km);
-		System.exit(0); */
-
-		if(distance_km <= r)  return getLinkCapacity(distance_km);
+		if(distance_km <= r) {
+			double dist_min = 1.5, dist_max = 6.4345, range_min = 0 , range_max = r;
+			distance_km = ((distance_km - range_min) / (range_max - range_min)) * (dist_max - dist_min) + dist_min;
+			return getLinkCapacity(distance_km);}
+	
 		else                  return 0.0;
 
 		//*********************************************************
@@ -151,58 +147,99 @@ public class PlayField
 	
 	public void FindNeighborhoods()
 	{
-		// Generate n1_neiborhood
+	
+		// Empty previous linked lists
+		for (int i = 0; i < dtnrouting.allNodes.size(); i++) {
+			dtnrouting.allNodes.get(i).link_capacity.clear();
+			dtnrouting.allNodes.get(i).n1_neighborhood.clear();
+			dtnrouting.allNodes.get(i).n2_neighborhood.clear();
+			dtnrouting.contactsTA.setText("");
+		}
+		
+		// Generate n1 and n2_neiborhood
 		for (int i = 0; i < (dtnrouting.allNodes.size()-1); i++) 
 			for(int j = i+1; j < dtnrouting.allNodes.size(); j++) 
 				{
 					Node ni = dtnrouting.allNodes.get(i);  //node i
 					Node nj = dtnrouting.allNodes.get(j);  // node j				
 					//If contact is present between nodes in current time stamp
-					dtnrouting.linkCapacities[ni.ID-1][nj.ID-1] = FindIntersection(ni, nj);
-					dtnrouting.linkCapacities[nj.ID-1][ni.ID-1] = dtnrouting.linkCapacities[ni.ID-1][nj.ID-1];
+					double capacity = FindIntersection(ni, nj);
 					
-					if(dtnrouting.linkCapacities[ni.ID-1][nj.ID-1] > 0.0)
+					// If two nodes are neighbor, then update the neighborhood information
+					if(capacity > 0.0)
 					{
-						// when new nodes comes into contact then deliver the message		
-						dtnrouting.n1_neighborhood[ni.ID-1][nj.ID-1] = 1; 
-						dtnrouting.n1_neighborhood[nj.ID-1][ni.ID-1] = 1;
-						dtnrouting.n2_neighborhood[ni.ID-1][nj.ID-1] = 1;
-						dtnrouting.n2_neighborhood[nj.ID-1][ni.ID-1] = 1;
-					}
-					else 
-					{
-						dtnrouting.n1_neighborhood[ni.ID-1][nj.ID-1] = 0; 
-						dtnrouting.n1_neighborhood[nj.ID-1][ni.ID-1] = 0;
-						dtnrouting.n2_neighborhood[ni.ID-1][nj.ID-1] = 0;
-						dtnrouting.n2_neighborhood[nj.ID-1][ni.ID-1] = 0;
-				
+						dtnrouting.contactsTA.insert(ni.ID+"<-->"+nj.ID+"\n", 0);
+						// when new nodes comes into contact then deliver the message
+						ni.link_capacity.add(capacity);
+						nj.link_capacity.add(capacity);
+						
+						ni.n1_neighborhood.add(j);
+						nj.n1_neighborhood.add(i);
+						
+						ni.n2_neighborhood.add(j);
+						nj.n2_neighborhood.add(i);
 					}}
 		
-		// Generate n2_neighborhood from n1_neiborhood
-		for (int i = 0; i < (dtnrouting.allNodes.size()-1); i++) 
-			for(int j = i+1; j < dtnrouting.allNodes.size(); j++) 
+		/*Generate n2_neighborhood from n1_neiborhood and
+		 allocate time slots (link capacities) according
+		 packets with neighboring n2 nodes
+		*/
+		// for each node in the network
+		for (int i = 0; i < dtnrouting.allNodes.size(); i++) {
+			Node ni = dtnrouting.allNodes.get(i);
+			
+			// Find n2 neighborhoods only if this node has data to transmit
+			if(ni.DestNPacket.size() > 0 && ni.n1_neighborhood.size()>0) {
+			// for each n1 neighbor
+			for(int j = 0; j < ni.n1_neighborhood.size(); j++) 
 				{
-					if(dtnrouting.n1_neighborhood[i][j] == 1) 
+					Node nj = dtnrouting.allNodes.get(ni.n1_neighborhood.get(j));
+					// find n2 neighbors
+					for(int k = 0; k < nj.n1_neighborhood.size(); k++) 
 					{
-					for(int k = 1; k < dtnrouting.allNodes.size(); k++) {
-							if(dtnrouting.n1_neighborhood[j][k]==1 ) {
-							if(i!=k) {
-									dtnrouting.n2_neighborhood[i][k] = 1;
-									dtnrouting.n2_neighborhood[k][i] = 1;
-					}}}}}
-		//Transfer Packets according to N2-Coloring
-		TransferPackets(); 					
+						Node nk = dtnrouting.allNodes.get(nj.n1_neighborhood.get(k));
+						// If nk is not in n2 linked list yet
+						if(ni.ID != nk.ID & !ni.n2_neighborhood.contains(nj.n1_neighborhood.get(k)) )
+								ni.n2_neighborhood.add(nj.n1_neighborhood.get(k));	
+					}}
+				//After n2 neighbors is decided, do dynamic slot allocation and transfer data
+				TransferPackets(ni); 	}}				
+	
+
 	}// Find neighbor hood ended
 
-	public void TransferPackets()
+	//******************************************************************************
+
+	public void TransferPackets(Node ni)
 	{
-		/*Decide from N2 Neighbor-hood which two nodes can 
-		 transfer packets within current time stamp
-		 also update link capacities accordingly */
+		//Coloring or slot allocation by looking at ni's n2 neighbors
+		ni.time_slot =  (double)(1.0/(ni.n2_neighborhood.size()+1.0)); // time_slot is all time
+		//System.out.println(ni.n2_neighborhood.size());
+		//System.out.println(ni.time_slot);
 		
-		//dtnrouting.currentSituatonTA.insert(ni.ID+" <--->"+nj.ID+"\n", 0); //when new nodes comes into contact then display it on the current situation text area
-		//dtnrouting.ob.Deliver(ni, nj);
-	}
+		// See which n2 nodes have no data to transmit
+		// and see how much data, transmitting node have
+		int silent_nodes = 0;
+		int all_packets=0;
+		for(int k = 0; k < ni.n2_neighborhood.size(); k++) {
+			int data_size = dtnrouting.allNodes.get(ni.n2_neighborhood.get(k)).DestNPacket.size();
+			if(data_size ==0) silent_nodes +=1;
+			else all_packets+= data_size;		
+		}
+		 
+		ni.time_slot  = ni.time_slot + ni.time_slot *( ni.DestNPacket.size()* silent_nodes)/all_packets;
+		
+		// Update the time_slot of ni, according to above information
+		for(int k =0; k <  ni.n1_neighborhood.size(); k++) {
+			// Available capacity for link with k n1_neighbor
+			ni.capacity= (double)(ni.link_capacity.get(k)*ni.time_slot);
+			//System.out.println("DELIVER: "+ni.ID+" and "+dtnrouting.allNodes.get(ni.n1_neighborhood.get(k)).ID);
+			//System.out.println(ni.link_capacity.get(k)+", "+ni.time_slot);
+			//System.out.println(ni.ID+","+ dtnrouting.allNodes.get(ni.n1_neighborhood.get(k)).ID);
+			if(!dtnrouting.allNodes.get(ni.n1_neighborhood.get(k)).name.contains("S"))
+			dtnrouting.ob.DeliverData(ni, dtnrouting.allNodes.get(ni.n1_neighborhood.get(k)));
+		}
+}
 	
 
 //******************************************************************************

@@ -16,18 +16,26 @@ public class Node
     public ArrayList<Double>  prob_coord = new ArrayList<Double>();
     public int ID, x_inc=0,y_inc=0,nodeX,nodeY,positionTracker;
     // Used to follow part of a data set part
-    public int startTracker,direction=1;
+    public int startTracker,direction=1,reliability;
     public int queueSizeLeft, wholeQueueSize,radioRange,speed=0,nodeTracker=0;
     public String name; 
     public NodeMovement node_nm;
+    private Random rand =new Random();
   
-    //packet related properties of a node
-    public HashMap <String, Integer> packetTimeSlots=new HashMap<String, Integer>();
+    //packets destined to this node and parameters
+    public LinkedList <Packet> nodePackets =  new LinkedList<Packet>();
+    public double msg_latency=0, msg_hops=0, msg_dl=0, msg_relibility=0; 
+    
+    //public HashMap <String, Integer> packetTimeSlots=new HashMap<String, Integer>();
     public HashMap <String, Integer> packetCopies=new HashMap<String, Integer>();
     public HashSet <String> packetIDHash=new HashSet<String>();
     public HashMap <Packet, Node> DestNPacket=new HashMap<Packet, Node>();
     public int num_packets, packets_ttl;
     
+    public LinkedList<Integer> n1_neighborhood = new LinkedList<Integer>(); 
+    public LinkedList<Integer> n2_neighborhood = new LinkedList<Integer>();
+    public LinkedList<Double>  link_capacity = new LinkedList<Double>();
+    public double time_slot=1.0, capacity=0;
     // When node is from Datasets
     public int nodePath[][],x_max,y_max;
 //******************************************************************************
@@ -35,22 +43,30 @@ public class Node
 public  Node() {
 	node_nm = new NodeMovement();
 	node_nm.InitialNodePositions(this);
+	this.reliability = rand.nextInt(4)+1;
+	if(this.reliability==5) {
+		this.reliability =4;
+	}
+			
 }
 
 //******************************************************************************
 
-//UPDATING TIME STAMP VALUES OF packetS INSIDE A NODE
-public void updatepacketTimestamp(Node node)
+public void refreshNodeSettings()
 {
-        for (Iterator<Map.Entry<String,Integer>> i = node.packetTimeSlots.entrySet().iterator(); i.hasNext(); )
-        {
-           Map.Entry<String,Integer> entry = i.next();
-           String packetName = entry.getKey();
-           Integer TS = entry.getValue();
-           TS=TS+1;
-           //Time spent by a packet inside a nodes
-           node.packetTimeSlots.put(packetName, TS);
-        }
+	
+	packetIDHash.clear();     
+    queueSizeLeft=this.wholeQueueSize;
+	DestNPacket.clear();
+	x_coord.clear();
+	y_coord.clear();
+	nodePackets.clear();
+	prob_coord.clear();
+	node_nm.InitialNodePositions(this);
+	msg_latency= msg_hops = msg_dl= msg_relibility =0;
+	time_slot=1.0;
+	capacity=0;
+	
 }
 
 

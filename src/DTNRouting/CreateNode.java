@@ -26,7 +26,7 @@ public class CreateNode extends dtnrouting  implements ItemListener, ActionListe
 	 */
 	private static final long serialVersionUID = 1L;
 	//Instance variables
-    public Random randObj=new Random();
+    public Random rand=new Random();
     public JFrame jf=new JFrame("Create Node");
     public Label nodeType=new Label("User Nodes");
     public Label nodeS=new Label("Number of Nodes");
@@ -69,10 +69,10 @@ public void GenerateFrame() {
         cspeed.add((speed+1)*10+""); // setting speed of the mobile node
 
    //Add radio ranges and queue sizes to their respective choice boxes
-   for(int l=1;l<6;l++)
+   for(int l=1;l<15;l=l+2)
     {
         cradiorange.add(l+"");//add Radio Range indices
-        cqueuesize.add(l*10+"");
+        cqueuesize.add(l +"");
     }
             
     cnType.add("Synthetic");
@@ -193,13 +193,15 @@ public void actionPerformed(ActionEvent e)
 		              for (int l=0;l<Integer.parseInt(source_node.getText());l++)
 		              {
 		              Node node=new Node();
+		              // Keep reliability maximum for the source node
+		              node.reliability=4;
 		              Node.ID_INCREMENTER+=1;
 		              node.ID=Node.ID_INCREMENTER;
 		              node.name="S"+node.ID;
 		              node.speed=0;
 		              dtnrouting.Sources.add(node);
-		              node.setRadioRange(5);
-		              node.wholeQueueSize=node.queueSizeLeft=10;
+		              node.setRadioRange(6);
+		              node.wholeQueueSize=node.queueSizeLeft=50;
 		              dtnrouting.allNodes.add(node);
 		              }
               }
@@ -248,10 +250,7 @@ public void actionPerformed(ActionEvent e)
 						e1.printStackTrace();
 					}
                 }
-      
-                
-		                 
-		    }
+           }
               
     	   // THE DESTINATION NODES: Choose randomly from regular user nodes
     	   if(dest_node.getText().equals("0"))
@@ -268,13 +267,14 @@ public void actionPerformed(ActionEvent e)
     			 
     			 for (int i=0; i<s; i++ ) {
 	    				int rand_number = rand.nextInt(total_size);
-	    				while(num.contains(rand_number)==true) 
+	    				//If the node is already chosen as destination
+	    				// or the chosen node is source then do selection again
+	    				while(num.contains(rand_number)==true || dtnrouting.allNodes.get(rand_number).name.substring(0,1).equals("S")) 
 	    					  rand_number = rand.nextInt(total_size); 
-    			         num.add(rand_number);
+    			         
+	    				 num.add(rand_number);
     			         Node node=dtnrouting.allNodes.get(rand_number);
-    			         if(node.name.substring(0,1).equals("R"))
-    			        	 node.name = "D"+node.name.substring(1,2); //Rename it.
-    			         else continue;
+    			         node.name = "D"+node.name.substring(1,2); //Rename it.
     			         dtnrouting.Destinations.add(node);
     			 	}
     	      }

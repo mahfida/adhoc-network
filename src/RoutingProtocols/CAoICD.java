@@ -55,7 +55,7 @@ public void setPerimeters()
             lastPeriodStartTime[m][n]=-1;
             lastEncounterTime[m][n]=0;
         }
-   dtnrouting.CommentsTA.append("\nWARMUP PERIOD");
+   dtnrouting.deliveryTA.append("\nWARMUP PERIOD");
 }
 
 //******************************************************************************
@@ -129,29 +129,17 @@ else
 
 //******************************************************************************
  
-public void Deliver(Node nx,Node ny)    //x and y are intermediet sender and reciever
+public void DeliverData(Node nx,Node ny)    //x and y are intermediate sender and receiver
 {
 
-   findPeriodOfEncounters(nx,ny);
-   updateAICDuration(nx.ID-1,ny.ID-1);
-    //Bidirectional connectivity
-    DeliverMessage(nx, ny);
-    DeliverMessage(ny, nx);
-
-}
-
-//******************************************************************************
-
-public void DeliverMessage(Node nx, Node ny)
-{
-  if(dtnrouting.isRun==true ){
-
+  findPeriodOfEncounters(nx,ny);
+  updateAICDuration(nx.ID-1,ny.ID-1);
   if(NodeMovement.warmupPeriod==size) //Warming Period finished
   {
      
       if(!warmFlag)
       {
-          dtnrouting.CommentsTA.append(" FINISHED");
+          dtnrouting.deliveryTA.append(" FINISHED");
           for(int h=0;h<dtnrouting.arePacketsDelivered.size();h++)
             {
                 Packet packetObj=dtnrouting.arePacketsDelivered.get(h);
@@ -161,10 +149,10 @@ public void DeliverMessage(Node nx, Node ny)
           dtnrouting.delay=0;
       }
       warmFlag=true;
-   if(!nx.DestNPacket.isEmpty())
-   {
-    //Update the time spent by packets within a node nx
-   nx.updatepacketTimestamp(nx);
+   
+
+   //Update the time spent by packets within a node nx
+   //nx.updatepacketTimestamp(nx);
    //Transfer the packets
 
    for (Iterator<Map.Entry<Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
@@ -176,25 +164,17 @@ public void DeliverMessage(Node nx, Node ny)
          
         //If destination has not enough size to receIve packet
         //OR if its TTL is expired, , it Packet cannot be sent
-        if(checkTTLandSize(nx,ny,destNode,packetObj));
+         if(expiredTTL_LargeSize(nx,ny,packetObj)==true) ;
+       
 
         //If destination has enough size to receive packet
         //and if its TTL is not expired, , it Packet can be sent
         // if contact duration is enough to transfer the message
-        else if(packetObj.packetSize <= dtnrouting.linkCapacities[nx.ID - 1][ny.ID - 1])
-        {
-	        //If encountered Node has not yet received packet, Packet is yet not delivered,in ny's buffer enough space is free to occupy the Packet and Packet TTL is not expired
-	        if((!ny.packetIDHash.contains(packetObj.packetName))&&(ny.queueSizeLeft>packetObj.packetSize)&&(packetObj.ispacketDelivered==false)&&(packetObj.packetTTL>0))
-	        {
-	            //if ny is destination
+        else{ 
+        		//if ny is destination
 	            if(destNode.equals(ny))
-	            {
-	                ny.DestNPacket.put(packetObj,null);
-	                packetObj.ispacketDelivered=true;
-	                deliverPacket(nx,ny,packetObj);
-	                dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]-=packetObj.packetSize;
-	                i.remove();
-	            }
+	            deliver_Destination(nx,ny,packetObj);
+	           
 	            
 	            //if ny is not a destination
 	            else
@@ -204,24 +184,14 @@ public void DeliverMessage(Node nx, Node ny)
 	            	   transfer = true;
 	               
 	               //Within same node Packet be forwarded to regular or fixed node
-	               if(transfer &&(ny.name.startsWith("R")||(nx.name.startsWith("D"))))
-	                {
-	                     packetObj.packetBandwidth+=1;
-	                     ny.DestNPacket.put(packetObj, destNode);
-	                     dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]-=packetObj.packetSize;
-	                     deliverPacket(nx,ny,packetObj);
-	                     i.remove();
-	      }}}}
-
-        }
+	               if(transfer)// && (ny.name.startsWith("R")||(nx.name.startsWith("D"))))
+	            	   deliver_Relay(nx,ny,destNode, packetObj,true);
+	            }}
 
     }
-//Check whether forwarding of packets have ended
- checkForwardingEnds();
 
-   }}
-      
-}//End of method
+
+}}//End of method
 
 //******************************************************************************
 

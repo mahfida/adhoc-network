@@ -43,11 +43,11 @@ if(AgeCounter[x][y]>0) // The current inter-contact duration is stored in k
         AvgICDuration[x][y]=AgeCounter[x][y]; //Maximum value of time lapse after which x and y encounters
 
     }
-super.Encounter(x, y);//to update predictibility value and set AgeCounter to zero
+super.Encounter(x, y);//to update predictability value and set AgeCounter to zero
 }
 
 @Override
-public void Deliver(Node nx,Node ny)
+public void DeliverData(Node nx,Node ny)
 {
     Encounter(nx.ID-1,ny.ID-1);
     Transitivity(nx.ID-1,ny.ID-1);
@@ -63,14 +63,10 @@ public void Deliver(Node nx,Node ny)
             packetObj.packetTTL=packetObj.maxTTL;
             packetObj.packetLatency=0;
         }
-          dtnrouting.CommentsTA.append(" FINISHED\n");
+          dtnrouting.sdpTA.append(" FINISHED\n");
           dtnrouting.delay=0;
       }
       warmFlag=true;
-   if(!nx.DestNPacket.isEmpty())
-   {
-    //Update the time spent by packets within a node nx
-   nx. updatepacketTimestamp(nx);
    
    //Transfer the packets
    for (Iterator<Map.Entry<	Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
@@ -78,9 +74,11 @@ public void Deliver(Node nx,Node ny)
         Map.Entry<Packet,Node> entry = i.next();
         Packet packetObj = entry.getKey();
         Node   destNode = entry.getValue();
-        if((packetObj.ispacketDelivered==false)   
+        
+        if(expiredTTL_LargeSize(nx,ny,packetObj)==true) ;
+        
         // if link capacity is enough to transfer the message
-        && (packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]))
+        else
         {
             //If destination encounters, hands over packet to it
             if(ny==destNode)
@@ -99,9 +97,6 @@ public void Deliver(Node nx,Node ny)
                      cases=2; // there is chances that ny may meet sooner than nx with ny, so hand over a copy to ny and keep one with nx
            
             //Hand Over the packet to encountered Node
-            packetObj.packetBandwidth+=1; //Since packet is transfered
-            ny.packetIDHash.add(packetObj.packetName);
-            ny.queueSizeLeft-=packetObj.packetSize;
             packetObj.packetTTL-=1;
 
             //Perform case specific functions
@@ -109,39 +104,28 @@ public void Deliver(Node nx,Node ny)
            {
                 case 1:
                    //deliver packet to destination
-                   ny.DestNPacket.put(packetObj,null);
-                   packetObj.ispacketDelivered=true;
+                   deliver_Destination(nx, ny, packetObj);
                    packetObj.packetLatency=dtnrouting.delay;
-                   //Delete packet copy from nx
-                   nx.queueSizeLeft+=packetObj.packetSize; // the whole space
-                   nx.packetIDHash.remove(packetObj.packetName);
-                   i.remove();
+                   
                    break;
                
                 case 2:
                    //deliver packet to ny and keep copy with nx too
-                   ny.DestNPacket.put(packetObj,destNode);
+                   deliver_Relay(nx, ny,destNode, packetObj, false);
                    break;
 
                 case 3:
-                   ny.DestNPacket.put(packetObj,destNode);
-                   //Delete packet copy from nx
-                   nx.queueSizeLeft+=packetObj.packetSize; // the whole space
-                   nx.packetIDHash.remove(packetObj.packetName);
-                   i.remove();
-                   break;
+                  deliver_Relay(nx, ny,destNode, packetObj, true);
+                  nx.packetIDHash.remove(packetObj.packetName);                
+                  break;
                }
-            	dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
-            	//Display Result
-            	dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
             }
 
            
          }
-       }
+   //Check whether forwarding of packets have ended
     }
-//Check whether forwarding of packets have ended
- checkForwardingEnds();
+
 } //End of Deliver()
 } //End of MCPRoPHET
 

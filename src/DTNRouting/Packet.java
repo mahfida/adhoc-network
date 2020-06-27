@@ -17,10 +17,12 @@ public class Packet implements ActionListener
     public Node destNode=new Node(); //destination node of the packet
     public Node sourceNode=new Node(); //source node of the packet
     public int packetTTL,maxTTL;
-    public int packetSize,packetLoad=1,packetBandwidth=0,packetLatency=0,packetDelivered=0;
+    // Features used to assess network transmission quality
+    public int packetSize,packetLoad=1,packetHops=0,packetLatency=0; 
+    public double packetReliability=4;
     public static int packetID;
     public boolean ispacketDelivered=false,isTTLExpired=false,isLargeSize=false;
-    public String packetName,name;
+    public String packetName;
     public JFrame jf=new JFrame("Create packet");
     public int num_packets=0;
     public Label lpacketNumber=new Label("No. of packets");
@@ -32,9 +34,9 @@ public class Packet implements ActionListener
     public Button ok=new Button("OK");
     public Button close=new Button("Close");
     public String endNodesRegion="Same";
-    public Color packet_color; // so to differentiate between packets
     Random rand=new Random();
     dtnrouting dtn=new dtnrouting();
+    
 
 
 //******************************************************************************
@@ -46,14 +48,19 @@ public Packet()
 
 public void refreshPacketSettings()
 {
-    ispacketDelivered=false;
-    packetLoad=1;
-    packetTTL=this.maxTTL;
-    packetLatency=this.packetBandwidth=packetDelivered=0;
-    packetDelivered=0;
+	
+	packetID=packetID+1;
+	// increment the id of packet and then add it in tpacketNumber
+	packetName ="p"+packetID; //packet Name for reference in code
+	packetSize = 1;   
+    ispacketDelivered=false;  
     isLargeSize=false;
     isTTLExpired=false;
-
+    packetLoad=1;
+    packetTTL=this.maxTTL;
+    packetLatency=0;
+    packetHops=0;
+    packetReliability=4;
 }
 
 @Override

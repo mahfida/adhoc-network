@@ -28,10 +28,10 @@ public class dtnrouting extends Applet implements Runnable
 {
 	private static final long serialVersionUID = 1L;
 	// VARIABLES USED THROUGHOUT THE SIMULATION
-    public int i, radio;
+    //public int i, radio;
     public static long simulationTime = 0;
     //  source and destination indices declare static and other parameters are initially 0
-    public static int dataset_simulation_index=0, s_index=0, d_index=0, latency=0, bandwidth=0, load=0, DR=0, NoDuplicate, delay=0, appletWidth, appletHeight;
+    public static int dataset_simulation_index=0, delay=0, appletWidth, appletHeight;
     // dimensions of applet parameters
     public static int width, height, x_start, y_start, first_regular_node_index=0;
     
@@ -40,20 +40,17 @@ public class dtnrouting extends Applet implements Runnable
     public static int latency_avg=0, load_avg=0, bandwidth_avg=0, packetCounter=0, DR_avg=0, nodecount=0;
    
     // Variables related to movement speeds
-    public static boolean random_movement=false, x_reached=false, y_reached=false;
-    public static boolean isdelivered=false, SIMULATION_ENDED=false, isRun=false;
+    //public static boolean random_movement=false, x_reached=false, y_reached=false;
+    public static boolean isdelivered=false, THIS_SIMULATION_ENDED=false, SIMULATION_RUNNING=false;
     public static String  movementtype="Random", protocolName="";
-    public static int     nodeNumber=-1, THIS_SIMULATION=4, TOTAL_SIMULATION_RUNS=4;
-	public static int     n1_neighborhood[][], n2_neighborhood[][]; //when there is a contact between two nodes
-	public static double  linkCapacities[][]; // if contact present then link capacity in bandwidth
-    //RoutingProtocol.metrixArray(this.Sim); // USED TO ASSING ARRAYS OF ROUTTING PROTOCOL WHEN SIM IS HIGH
-    
+    public static int     NumPacketsDeliverExpired=0, nodeNumber=-1, SIMULATION_N0=10, TOTAL_SIMULATION_RUNS=10;
+	 
     //******************************************************************************
     //DIFFERENT OBJECTS
     public static RoutingProtocol ob;  //create object of routing protocol
     public static NodeMovement nodemovement;
     public static double[][] p;    //predictability value
-    Random rand=new Random();
+    //Random rand=new Random();
     Graphics graphics;
     private Rectangle rect=null;
     PlayField playField=new PlayField();
@@ -113,12 +110,10 @@ public class dtnrouting extends Applet implements Runnable
 
 //******************************************************************************
 //Image Icons and RestButtons
-    ImageIcon refreshIcon=new ImageIcon("refresh.png");
     ImageIcon clearIcon=new ImageIcon("clear.png");
     ImageIcon runIcon=new ImageIcon("run.png");
     ImageIcon map;
     Border refreshBorder = new LineBorder(Color.lightGray, 1);
-    JButton refresh=new JButton(refreshIcon);
     Border clearBorder = new LineBorder(Color.lightGray, 1);
     JButton clear=new JButton(clearIcon);
     Border runBorder = new LineBorder(Color.lightGray, 1);
@@ -136,18 +131,18 @@ public class dtnrouting extends Applet implements Runnable
 
 //LABELS FOR COMPONENTS
     Label hd=new Label("SIMULATION OF AD HOC NEWORK" , Label.CENTER);
-    Label rhist=new Label("ROUTING HISTORY" ,Label.CENTER);//create label on p2
-    Label comments=new Label("Packet Transition Process" ,Label.LEFT);//create label on p2
-    Label situation=new Label("Contact Opportunities" ,Label.LEFT);//create label on p2
-    /*Label NoSimulations=new Label("Simulation(s)", Label.LEFT); //it sets number of simulations*/    
-    Label rDetail=new Label("End Node Details", Label.CENTER);
+    Label sdp=new Label("End Nodes" ,Label.LEFT);//create label on p2
+    Label contacts=new Label("Contacts" ,Label.LEFT);//create label on p2
+    Label transfer=new Label("Packet Relay" ,Label.LEFT);//create label on p2    
+    Label delivery=new Label("Packet Delivery", Label.CENTER);
 
 //******************************************************************************
 // TEXT AREAS USED IN SECOND PANEL
-    public static TextArea CommentsTA=new TextArea(" ");						//create Textarea on p2
-    public static TextArea currentSituatonTA=new TextArea(" ");					//create Textarea on p2
-    public static TextArea tDetail=new TextArea("Src    Dst    Packet");   //create Textarea on p2
-
+    public static TextArea sdpTA=new TextArea("Src    Dst    Packet");  //create Textarea on p2
+    public static TextArea contactsTA=new TextArea(" ");						//create Textarea on p2
+    public static TextArea transferTA=new TextArea(" ");					    //create Textarea on p2
+    public static TextArea deliveryTA=new TextArea(" ");						//create Textarea on p2
+    
 //******************************************************************************
 
 //Called when an Applet starts execution
@@ -269,13 +264,10 @@ public void addComponents_Panel1()
         //setting border and name of "run, refresh, clear" button
         run.setBorder(runBorder);
         run.setActionCommand("Run");
-        refresh.setBorder(refreshBorder);
-        refresh.setActionCommand("Refresh");
         clear.setBorder(clearBorder);
         clear.setActionCommand("Clear");
         //Register reset  button to the listener
         run.addActionListener(new MyActionAdapter(this));
-        refresh.addActionListener(new MyActionAdapter(this));
         clear.addActionListener(new MyActionAdapter(this));
         
         //Adding Menus
@@ -285,7 +277,6 @@ public void addComponents_Panel1()
         jmb.add(packetMenu);    
         jmb.add(viewResults);
         jmb.add(run);
-        jmb.add(refresh);
         jmb.add(clear);
         
         p1.add(hd);
@@ -306,20 +297,22 @@ public void addComponents_Panel2()
         p2.setFont(new Font("San Serif", Font.BOLD,9));
 
         //set dimension for comments text area and add on p2
-        rhist.setFont(new Font("San Serif", Font.BOLD,11));
-  //      rhist.setPreferredSize(new Dimension(140,30));//Set dimension for routing history label
-        CommentsTA.setPreferredSize(new Dimension(140,150));
-        currentSituatonTA.setPreferredSize(new Dimension(140,150));
-        tDetail.setPreferredSize(new Dimension(140,150));
+        //rhist.setFont(new Font("San Serif", Font.BOLD,11));
+        sdpTA.setPreferredSize(new Dimension(140,150));
+        contactsTA.setPreferredSize(new Dimension(140,150));
+        transferTA.setPreferredSize(new Dimension(140,150));
+        deliveryTA.setPreferredSize(new Dimension(140,150));
+        
 
         // Add components to panel p2
-        p2.add(rhist);
-        p2.add(comments); //add comments text area on p2
-        p2.add(CommentsTA);
-        p2.add(situation); //add current situation text area on p2
-        p2.add(currentSituatonTA);
-        p2.add(rDetail);
-        p2.add(tDetail);
+        p2.add(sdp);
+        p2.add(sdpTA);
+        p2.add(contacts);
+        p2.add(contactsTA); //add comments text area on p2
+        p2.add(transfer); //add current situation text area on p2
+        p2.add(transferTA); 
+        p2.add(delivery);
+        p2.add(deliveryTA);
         
         p2.setPreferredSize(new Dimension(140, appletHeight));
         //Setting parameters for graphics
@@ -362,8 +355,8 @@ public void run()
 {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         while (true) {
-        if(isRun==true)
-            try { nextPositionForMovement(); } 
+        if(SIMULATION_RUNNING==true)
+            try { updateInformation.nextPositionForMovement(); } 
             catch (IOException ex) { Logger.getLogger(dtnrouting.class.getName()).log(Level.SEVERE, null, ex); }
             repaint();
 
@@ -380,7 +373,7 @@ public void run()
 public void ExecuteProtocol()
 {
 		    isdelivered=false;
-		//    dtnrouting.CommentsTA.insert(protocolName,0);
+		    dtnrouting.deliveryTA.insert(protocolName,0);
 		    if(protocolName.equals("Direct Delivery"))      ob = new DirectDelivery();		
 		    else if (protocolName.equals("First Contact"))  ob = new FirstContact();		  
 		    else if(protocolName.equals("Epidemic"))        ob = new Epidemic();
@@ -426,59 +419,25 @@ public void animation(Graphics g)
        g.fillRect(0, 0, this.getWidth(), this.getHeight());
        g.setColor(Color.RED);
        g2.drawRect(x_start, y_start, width, height);
-       //for drawing nodes and the packets that they hold
-       playField.drawNodesPackets(g);
+      
 
        //Until destination does not get packet the transfer of message carries on
-       if(SIMULATION_ENDED==true)
+       if(THIS_SIMULATION_ENDED==true)
          updateInformation.simulationSettings(this);
      
-       if(isRun) 
+       if(SIMULATION_RUNNING) 
        {
-       // Update the TTL field of all packets along with latency of the packet
-            UpdateTTLandLatency();
-            playField.FindNeighborhoods();
-            //Stores the time units elapsed in the simulation environment
-            simulationTime+=1;
+    	   //System.out.println("dtn: "+delay);
+    	   //for drawing nodes and the packets that they hold
+           playField.drawNodesPackets(g);
+           // Update the TTL field of all packets along with latency of the packet
+           updateInformation.UpdateTTLandLatency();
+           playField.FindNeighborhoods();
+           //Stores the time units elapsed in the simulation environment
+           simulationTime+=1;
        }
 }
 
-//******************************************************************************
-
-//Update TTL and packet Latency
-public void UpdateTTLandLatency()
-{
-	   
-        delay=delay+1;
-        for(int h=0;h < arePacketsDelivered.size();h++)
-        {
-            Packet packetObj=arePacketsDelivered.get(h);
-            if(packetObj.packetTTL>0) {
-                packetObj.packetTTL-=1;}
-            if(packetObj.ispacketDelivered==false)
-                packetObj.packetLatency=delay;
-        }
-        
-}
-
-//******************************************************************************
-
-public void nextPositionForMovement() throws IOException
-{
-	//NODE MOVEMENT
-		if(movementtype.equals("Random"))
-	    for(int i=0; i< allNodes.size();i++)
-	    allNodes.get(i).node_nm.RandomMovement(allNodes.get(i));
-	
-	    else if(movementtype.equals("Pseudorandom"))
-	    	 for(int i=0; i< allNodes.size();i++)
-	    		    allNodes.get(i).node_nm.Follow_PseudoRandomPath(allNodes.get(i));
-	   
-	    else if(movementtype.equals("Dataset"))
-	    	 for(int i=0; i< allNodes.size();i++)
-	    		    allNodes.get(i).node_nm.Follow_DatasetPath(allNodes.get(i));
-	
-}
 //******************************************************************************
 }//END OF CLASS
 

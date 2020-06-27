@@ -2,12 +2,12 @@
 package DTNRouting;
 
 //IMPORT PACKAGES
-import java.awt.*;
+//import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Random;
-import javax.swing.JFrame;
-import javax.swing.WindowConstants;
+//import javax.swing.JFrame;
+//import javax.swing.WindowConstants;
 
 //------------------------------------------------------------------------------
 //START OF CLASS packet
@@ -67,40 +67,37 @@ public void actionPerformed(ActionEvent e)
 
 //******************************************************************************
 public void CreateMessageAtSource() {
+	
         for(int d=0; d < dtnrouting.Destinations.size(); d ++) {
-        	
         	//Destination chooses its source randomly
         	int source_id = rand.nextInt(dtnrouting.Sources.size());
         	
         	//Destination chooses number of packets randomly
-        	dtnrouting.Destinations.get(d).num_packets =rand.nextInt(10)+1;
-        	dtnrouting.Destinations.get(d).packets_ttl =rand.nextInt(1000)+200;
+        	dtnrouting.Destinations.get(d).num_packets =rand.nextInt(15)+1;
+        	dtnrouting.Destinations.get(d).packets_ttl =rand.nextInt(1000)+500;
         	
         	for(int j=0; j< dtnrouting.Destinations.get(d).num_packets; j++) {//number of packets that each source will transmit..
            	    Packet p =new Packet();
-           	    Packet.packetID=Packet.packetID+1;
-           	    // increment the id of packet and then add it in tpacketNumber
-           	    p.packetName="p"+Packet.packetID; //packet Name for reference in code
-           	    p.name="p"+(j+1);
-           	    p.packet_color=new Color(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
-           	    p.packetTTL= p.maxTTL=dtnrouting.Destinations.get(d).packets_ttl;
-           	    p.packetSize=1;// Make it static but can be changed
+           	    p.maxTTL=dtnrouting.Destinations.get(d).packets_ttl;
+           	    p.refreshPacketSettings();
+           	    dtnrouting.Destinations.get(d).nodePackets.add(p);
            	    dtnrouting.arePacketsDelivered.add(p);
         	
               if(dtnrouting.Sources.get(source_id).queueSizeLeft > p.packetSize)
                {    
             	    dtnrouting.Sources.get(source_id).queueSizeLeft-=p.packetSize; //update queue space after putting packet in it
                     dtnrouting.Sources.get(source_id).packetIDHash.add(p.packetName); //Store ID of packet in the source as Hash value
-                    dtnrouting.Sources.get(source_id).packetTimeSlots.put(p.packetName,0);
+                    //dtnrouting.Sources.get(source_id).packetTimeSlots.put(p.packetName,0);
                     dtnrouting.Sources.get(source_id).packetCopies.put(p.packetName,1);
                     dtnrouting.Sources.get(source_id).DestNPacket.put(p,dtnrouting.Destinations.get(d));
-                    dtnrouting.tDetail.append("\n "+dtnrouting.Sources.get(source_id).ID+"--"+dtnrouting.Destinations.get(d).ID+" ("+p.name+")");
+                    dtnrouting.sdpTA.append("\n "+dtnrouting.Sources.get(source_id).ID+"--"+dtnrouting.Destinations.get(d).ID+" ("+p.packetName+")");
                  }
               
               else    //If queue of the packet has not enough space to store the new packet then
-              dtnrouting.CommentsTA.append("\nSource "+ dtnrouting.Sources.get(source_id).ID+" has not enough space to occupy "+p.name);  
+              dtnrouting.sdpTA.append("\nSource "+ dtnrouting.Sources.get(source_id).ID+" has not enough space to occupy "+p.packetName);  
            }  //all packets of the destination assigned to the source of dest.     
-	    }     
+	    }  
+        
 }
 
 @Override

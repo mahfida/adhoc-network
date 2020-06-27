@@ -36,7 +36,7 @@ public void setPerimeters()
     for(int m=0;m<size;m++)
         for(int n=0;n<size;n++)
            LastEncounterTime[m][n]=-1; //Initially last encounter time is unknown shown by -1
-    dtnrouting.CommentsTA.append("\nWARMUP PERIOD");
+    dtnrouting.sdpTA.append("\nWARMUP PERIOD");
 }
 
 //******************************************************************************
@@ -47,26 +47,14 @@ public void updateLastEncounterTime(int x,int y)
 }
 
 //******************************************************************************
-public void Deliver(Node nx,Node ny)    //x and y are intermediet sender and reciever
+public void DeliverData(Node nx,Node ny)    //x and y are intermediate sender and receiver
 {
-    updateLastEncounterTime(nx.ID-1,ny.ID-1);
-    //Bidirectional connectivity
-    DeliverMessage(nx, ny);
-    DeliverMessage(ny, nx);
-}
-
-//******************************************************************************
-//DELIVER MESSAGE
-
-public void DeliverMessage(Node nx, Node ny)
-{  
-  if(dtnrouting.isRun==true )
-  {
+  updateLastEncounterTime(nx.ID-1,ny.ID-1);
   if(NodeMovement.warmupPeriod==size) //Warming Period finished
   {
       if(!warmFlag)
       {
-          dtnrouting.CommentsTA.append(" FINISHED ");
+          dtnrouting.sdpTA.append(" FINISHED ");
           for(int h=0;h<dtnrouting.arePacketsDelivered.size();h++)
             {
                 Packet packetObj=dtnrouting.arePacketsDelivered.get(h);
@@ -77,13 +65,9 @@ public void DeliverMessage(Node nx, Node ny)
       }
       warmFlag=true;
       
-      //if nx has packet and ny has to receive it
-      if(!nx.DestNPacket.isEmpty())
-      {
-        //Update the time spent by packets within a node nx
-             nx. updatepacketTimestamp(nx);
-        //Transfer the packets
-
+      
+       //Transfer the packets
+    
        for (Iterator<Map.Entry<Packet,Node>> i = nx.DestNPacket.entrySet().iterator(); i.hasNext(); )
         {
         Map.Entry<Packet,Node> entry = i.next();
@@ -93,69 +77,24 @@ public void DeliverMessage(Node nx, Node ny)
         //If destination has not enough size to receive packet
         //OR if its TTL is expired, , it packet cannot be sent
 
-         if(checkTTLandSize(nx,ny,destNode,packetObj)==true);
+         if(expiredTTL_LargeSize(nx,ny,packetObj)==true) ;
 
         //If destination has enough size to receive packet
         //and if its TTL is not expired, , it packet can be sent
         // if contact duration is enough to transfer the message
         else
-        if(packetObj.packetSize<=dtnrouting.linkCapacities[nx.ID-1][ny.ID-1]){
-
-        //If encountered Node has not yet received packet, packet is yet not delivered,in ny's buffer enough space is free to occupy the packet and packet TTL is not expired
-        if((ny.packetIDHash.contains(packetObj.packetName) == false) 
-        		&& (ny.queueSizeLeft > packetObj.packetSize) 
-        		&& (packetObj.ispacketDelivered == false) 
-        		&& (packetObj.packetTTL > 0))
         {
-            if(ny==destNode)
-            {
-                packetObj.packetBandwidth+=1; //Since packet is transfered
-                ny.DestNPacket.put(packetObj,null);
-                ny.packetIDHash.add(packetObj.packetName);
-                ny.queueSizeLeft-=packetObj.packetSize;
-                ny.packetTimeSlots.put(packetObj.packetName,0);
-                dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
-                
-                packetObj.ispacketDelivered=true;
-                //update nx
-                nx.queueSizeLeft+=packetObj.packetSize; // the whole space
-                nx.packetIDHash.remove(packetObj.packetName);
-                nx.packetTimeSlots.remove(packetObj.packetName);
-                i.remove();
-                //Display Result
-                dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
-            }
+        	if(ny==destNode)
+        		deliver_Destination(nx ,ny, packetObj);
 
-            else  if((!ny.packetIDHash.contains(packetObj.packetName))&&(LastEncounterTime[nx.ID-1][destNode.ID-1]<LastEncounterTime[ny.ID-1][destNode.ID-1]))
-            {
-                 packetObj.packetBandwidth+=1; //Since packet is transfered
-                 ny.DestNPacket.put(packetObj,destNode);
-                 ny.packetIDHash.add(packetObj.packetName);
-                 ny.queueSizeLeft-=packetObj.packetSize;
-                 ny.packetTimeSlots.put(packetObj.packetName,0);
-                 dtnrouting.linkCapacities[nx.ID-1][ny.ID-1] -= packetObj.packetSize;
-                 
-                 //update nx
-                 nx.queueSizeLeft+=packetObj.packetSize; // the whole space
-                // nx.packetIDHash.remove(packetObj.packetName);
-                 nx.packetTimeSlots.remove(packetObj.packetName);
-                 i.remove();
-                 //Display Result
-                 dtnrouting.CommentsTA.append("\n"+nx.ID+" ---> "+ny.ID+":"+packetObj.name);
-            }
+            else  if(LastEncounterTime[nx.ID-1][destNode.ID-1]<LastEncounterTime[ny.ID-1][destNode.ID-1])
+            	deliver_Relay(nx ,ny,destNode, packetObj, true);
         }
-        }
+        
      }//End of for loop
-   }
-}
-
-//Check whether forwarding of packets have ended
-checkForwardingEnds();
 }
 }   //end of Deliver()
-
 //******************************************************************************
-
 }//End of class
 
 
