@@ -17,7 +17,6 @@
     import javax.swing.border.Border;
     import javax.swing.border.LineBorder;
     import AdapterPackage.*;
-    import RoutingProtocols.*;
     import java.util.logging.Level;
     import java.util.logging.Logger;
 
@@ -38,16 +37,15 @@ public class dtnrouting extends Applet implements Runnable
     // PERFORMANCE METTRICS
     // After multiple simulation averaging the results of the three metrics
     public static int latency_avg=0, load_avg=0, bandwidth_avg=0, packetCounter=0, DR_avg=0, nodecount=0;
-   
+    public static int source_index[] , dest_index[];
     // Variables related to movement speeds
     //public static boolean random_movement=false, x_reached=false, y_reached=false;
     public static boolean isdelivered=false, THIS_SIMULATION_ENDED=false, SIMULATION_RUNNING=false;
     public static String  movementtype="Random", protocolName="";
-    public static int     NumPacketsDeliverExpired=0, nodeNumber=-1, SIMULATION_N0=10, TOTAL_SIMULATION_RUNS=10;
-	 
+    public static int     NumPacketsDeliverExpired=0, nodeNumber=-1, SIMULATION_N0=1, TOTAL_SIMULATION_RUNS=1;
+	public static double [][] adjacencyMatrix;
     //******************************************************************************
     //DIFFERENT OBJECTS
-    public static RoutingProtocol ob;  //create object of routing protocol
     public static NodeMovement nodemovement;
     public static double[][] p;    //predictability value
     //Random rand=new Random();
@@ -72,29 +70,6 @@ public class dtnrouting extends Applet implements Runnable
 //Menus and menu items in menu bar jmb
     JButton nodeMenu=new JButton("Node");
     JButton packetMenu=new JButton("Packet");
-    JMenu   routingMenu=new JMenu("Routing Protocol");
-
-//  Contact oblivious dtn routing protocols
-    JMenuItem DDRP=new JMenuItem("Direct Delivery");
-    JMenuItem FC=new JMenuItem("First Contact");
-    JMenuItem ERP=new JMenuItem("Epidemic");
-    JMenuItem SnWB=new JMenuItem("Spray&Wait Binary");
-    JMenuItem SnWN=new JMenuItem("Spray&Wait Normal");
-    JMenu contactOblivious=new JMenu("Contact Oblivious");
-
-// History-base routing protocols
-    JMenuItem PRoPHET=new JMenuItem("PRoPHET");
-    JMenuItem NECTAR=new JMenuItem("NECTAR");
-    JMenuItem MPRoPHET=new JMenuItem("MPRoPHET");
-    JMenuItem CAoICD=new JMenuItem("CAoICD");
-    JMenuItem Fresh=new JMenuItem("FRESH");
-    JMenu historyBased=new JMenu("History Based");
-
-//  Routing protocols based on social relationships
-    JMenuItem SimBet=new JMenuItem("SimBet");
-    JMenuItem BubbleRap=new JMenuItem("BubbleRap");
-    JMenuItem CHRP=new JMenuItem("CHRP");
-    JMenu socialRShip=new JMenu("Social Relation");
 
 //Node Movement Models
     JMenu nm_model=new JMenu("Movement Model");
@@ -102,11 +77,6 @@ public class dtnrouting extends Applet implements Runnable
     public static JMenuItem nm_prandom=new JMenuItem("Pseudorandom");
     public static JMenuItem nm_ds=new JMenuItem("Dataset");
     JMenuItem nm_crossroads=new JMenuItem("Cross Roads");
-
-// Result MenuItem
-    JMenu viewResults=new JMenu("View Resluts");
-    JMenuItem performance=new JMenuItem("Performance Table");
-    JMenuItem chart=new JMenuItem("Bar Chart");
 
 //******************************************************************************
 //Image Icons and RestButtons
@@ -155,8 +125,7 @@ public void init()
         setLayout(bl);      //set border layout
         setParameters();    //set parameters for GUI
         addComponents_Panel1();
-        addComponents_Panel2();
-        
+        addComponents_Panel2();        
 }
 
 //******************************************************************************
@@ -185,62 +154,7 @@ public void addComponents_Panel1()
         packetMenu.setFont(new Font("Dialog",Font.PLAIN,10));
         packetMenu.addActionListener(new MyActionAdapter(this));
                     
-        // Add contact oblivious routing protocols in contactOblivous menu item
-        DDRP.setFont(new Font("Dialog",Font.PLAIN,10));
-        FC.setFont(new Font("Dialog",Font.PLAIN,10));
-        ERP.setFont(new Font("Dialog",Font.PLAIN,10));
-        SnWB.setFont(new Font("Dialog",Font.PLAIN,10));
-        SnWN.setFont(new Font("Dialog",Font.PLAIN,10));
-        contactOblivious.add(DDRP);
-        contactOblivious.add(FC);
-        contactOblivious.add(ERP);
-        contactOblivious.add(SnWB);
-        contactOblivious.add(SnWN);
-
-        //Add history based dtn routing protocols in historyBased menu item
-        PRoPHET.setFont(new Font("Dialog",Font.PLAIN,10));
-        MPRoPHET.setFont(new Font("Dialog",Font.PLAIN,10));
-        CAoICD.setFont(new Font("Dialog",Font.PLAIN,10));
-        Fresh.setFont(new Font("Dialog",Font.PLAIN,10));
-        historyBased.add(PRoPHET);
-        historyBased.add(MPRoPHET);
-        historyBased.add(CAoICD);
-        historyBased.add(Fresh);
-
-        //Add social relationship based dtn routing protocols in socialRShip menu item
-        SimBet.setFont(new Font("Dialog",Font.PLAIN,10));
-        BubbleRap.setFont(new Font("Dialog",Font.PLAIN,10));
-        socialRShip.add(SimBet);
-        socialRShip.add(BubbleRap);
-
-        //Setting Font Size and Adding contactOblivious, historyBased, socialRShip menu items to routing menu
-        routingMenu.setFont(new Font("Dialog",Font.PLAIN,10));
-        contactOblivious.setFont(new Font("Dialog",Font.PLAIN,10));
-        historyBased.setFont(new Font("Dialog",Font.PLAIN,10));
-        socialRShip.setFont(new Font("Dialog",Font.PLAIN,10));
-        routingMenu.add(contactOblivious);
-        routingMenu.add(historyBased);
-        routingMenu.add(socialRShip);
-
-        //Action Listener of contact oblivious routing protocols
-        DDRP.addActionListener(new MyActionAdapter(this));
-        FC.addActionListener(new MyActionAdapter(this));
-        ERP.addActionListener(new MyActionAdapter(this));
-        SnWB.addActionListener(new MyActionAdapter(this));
-        SnWN.addActionListener(new MyActionAdapter(this));
-        
-        //Action Listener of contact Based routing protocols
-        PRoPHET.addActionListener(new MyActionAdapter(this));
-        MPRoPHET.addActionListener(new MyActionAdapter(this));
-        CAoICD.addActionListener(new MyActionAdapter(this));
-        Fresh.addActionListener(new MyActionAdapter(this));
-        
-        //Action Listener of social relationship based routing protocols
-        SimBet.addActionListener(new MyActionAdapter(this));
-        BubbleRap.addActionListener(new MyActionAdapter(this));
-        //CHRP.addActionListener(new MyActionAdapter(this));
-
-        //Add different movement models in nm_model menu
+      //Add different movement models in nm_model menu
         nm_model.setFont(new Font("Dialog",Font.PLAIN,10));
         nm_random.setFont(new Font("Dialog",Font.PLAIN,10));
         nm_model.add(nm_random);
@@ -252,14 +166,7 @@ public void addComponents_Panel1()
         nm_model.add(nm_ds);
         nm_ds.addActionListener(new MyActionAdapter(this));
 
-        //Add Results Menu and its items
-        viewResults.setFont(new Font("Dialog",Font.PLAIN,10));
-        performance.setFont(new Font("Dialog",Font.PLAIN,10));
-        viewResults.add(performance);
-        performance.addActionListener(new MyActionAdapter(this));
-        chart.setFont(new Font("Dialog",Font.PLAIN,10));
-        viewResults.add(chart);
-        chart.addActionListener(new MyActionAdapter(this));
+
       
         //setting border and name of "run, refresh, clear" button
         run.setBorder(runBorder);
@@ -271,11 +178,10 @@ public void addComponents_Panel1()
         clear.addActionListener(new MyActionAdapter(this));
         
         //Adding Menus
-        jmb.add(routingMenu);
+
         jmb.add(nm_model); // Adding movement model menu in menu bar
         jmb.add(nodeMenu);
         jmb.add(packetMenu);    
-        jmb.add(viewResults);
         jmb.add(run);
         jmb.add(clear);
         
@@ -353,39 +259,35 @@ public void start ()
 //define the code that constitutes the new thread
 public void run()
 {
-        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+        //Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         while (true) {
         if(SIMULATION_RUNNING==true)
-            try { updateInformation.nextPositionForMovement(); } 
+            try { updateInformation.nextPositionForMovement(); 
+            } 
             catch (IOException ex) { Logger.getLogger(dtnrouting.class.getName()).log(Level.SEVERE, null, ex); }
             repaint();
 
-                        try
-                        { Thread.sleep(0,500); }
-                        catch (InterruptedException ex) { }
-            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+             try{ 
+                        	Thread.sleep(1000);
+             }catch (InterruptedException ex) { }
+             
+             // Run the simulation network
+             if(SIMULATION_RUNNING) 
+             {
+          	     updateInformation.UpdateTTLandLatency();
+                 //Call transfer function to deliver messages in each time unit
+                 if(!dtnrouting.THIS_SIMULATION_ENDED)
+                 playField.TransferPackets();
+                 //Stores the time units elapsed in the simulation environment
+                 simulationTime+=1;
+             }
+             if(THIS_SIMULATION_ENDED==true)
+                 updateInformation.simulationSettings(this);
+             
+
         }
 }
 
-//******************************************************************************
-
-//Selects a ROUTING protocol to execute
-public void ExecuteProtocol()
-{
-		    isdelivered=false;
-		    dtnrouting.deliveryTA.insert(protocolName,0);
-		    if(protocolName.equals("Direct Delivery"))      ob = new DirectDelivery();		
-		    else if (protocolName.equals("First Contact"))  ob = new FirstContact();		  
-		    else if(protocolName.equals("Epidemic"))        ob = new Epidemic();
-		    else if(protocolName.equals("Spray&WaitB"))     ob = new SprayAndWaitB();	      
-		    else if(protocolName.equals("Spray&WaitN"))     ob = new SprayAndWaitN();	   
-		    else if(protocolName.equals("PRoPHET"))         ob = new PRoPHET();	  
-		    else if(protocolName.equals("CAoICD"))          ob = new CAoICD();	
-		    else if(protocolName.equals("FRESH"))           ob = new FRESH();	   
-		    else if(protocolName.equals("BubbleRap"))       ob = new BubbleRap();		 
-	   //   else if(protocolName.equals("SimBet"))          ob = new SimBet(); 	
-		    
-  }
 
 //******************************************************************************
 //Calls paint()
@@ -419,23 +321,8 @@ public void animation(Graphics g)
        g.fillRect(0, 0, this.getWidth(), this.getHeight());
        g.setColor(Color.RED);
        g2.drawRect(x_start, y_start, width, height);
-      
+       playField.drawNodesPackets(g);
 
-       //Until destination does not get packet the transfer of message carries on
-       if(THIS_SIMULATION_ENDED==true)
-         updateInformation.simulationSettings(this);
-     
-       if(SIMULATION_RUNNING) 
-       {
-    	   //System.out.println("dtn: "+delay);
-    	   //for drawing nodes and the packets that they hold
-           playField.drawNodesPackets(g);
-           // Update the TTL field of all packets along with latency of the packet
-           updateInformation.UpdateTTLandLatency();
-           playField.FindNeighborhoods();
-           //Stores the time units elapsed in the simulation environment
-           simulationTime+=1;
-       }
 }
 
 //******************************************************************************

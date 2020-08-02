@@ -23,6 +23,8 @@ public class CreatePacket implements ActionListener
   public Button ok=new Button("Add");
   public Button close=new Button("Close");*/
   public int num_packets,ttl_packets,size_packets;
+  public PlayField pf = new PlayField();
+  public shortestPath  sp;
   Random rand=new Random();
 
 //******************************************************************************
@@ -68,29 +70,107 @@ public void actionPerformed(ActionEvent e)
 //******************************************************************************
 public void CreateMessageAtSource() {
 	
+	
+		// Calculate Adjacency matrix
+	    dtnrouting.source_index = new int[dtnrouting.Sources.size()];
+	    dtnrouting.dest_index = new int[dtnrouting.Destinations.size()];
+	    int s_counter=0 , d_counter=0;
+		
+	    for (int i = 0; i < (dtnrouting.allNodes.size()-1); i++) {
+			dtnrouting.adjacencyMatrix[i][i] = 0;
+			if(dtnrouting.allNodes.get(i).name.substring(0,1).equals("S"))
+				dtnrouting.source_index[s_counter++] = i;
+			else if(dtnrouting.allNodes.get(i).name.substring(0,1).equals("D"))
+				dtnrouting.dest_index[d_counter++] = i;
+			}
+			
+	    pf.FindNeighborhoods();
+			
+		
+	    // For last node
+	    dtnrouting.adjacencyMatrix[dtnrouting.allNodes.size()-1][dtnrouting.allNodes.size()-1]=0;
+		if(dtnrouting.allNodes.get(dtnrouting.allNodes.size()-1).name.substring(0,1).equals("S"))
+			dtnrouting.source_index[s_counter++] = dtnrouting.allNodes.size()-1;
+		else if(dtnrouting.allNodes.get(dtnrouting.allNodes.size()-1).name.substring(0,1).equals("D"))
+			dtnrouting.dest_index[d_counter++] = dtnrouting.allNodes.size()-1;
+		
+		// Find shortest path from each source too each destination
+	     for(int s=0; s < dtnrouting.source_index.length; s++) {
+	    	 sp = new shortestPath();
+	    	 dtnrouting.allNodes.get(dtnrouting.source_index[s]).ptD = new pathToDestination(dtnrouting.dest_index.length);
+	    	 sp.runDijkstra(dtnrouting.adjacencyMatrix, dtnrouting.dest_index , 
+	    			 dtnrouting.source_index[s], dtnrouting.allNodes.get(dtnrouting.source_index[s]));
+	    	 //System.out.println(dtnrouting.allNodes.get(dtnrouting.source_index[s]).ptD.paths);
+	    	 sp=null;
+	     }
+	
+	    // CHOOSE BEST SOURCE FOR EACH DESTINATION 
+	    int source_id =-1;
         for(int d=0; d < dtnrouting.Destinations.size(); d ++) {
-        	//Destination chooses its source randomly
-        	int source_id = rand.nextInt(dtnrouting.Sources.size());
+        	double distance = 1000.0; // max distance
+        
+        	/// *****************************
+        	// parameters, node capacity, reliability, hop count (calculate from source.ptd.path)
+        	//Choose source node--------------------
+        	for(int s=0; s < dtnrouting.source_index.length; s++) {
+        		//System.out.println(dtnrouting.allNodes.get(dtnrouting.source_index[s]).ptD.dest_distance[d]);
+        		if(dtnrouting.allNodes.get(dtnrouting.source_index[s]).ptD.dest_distance[d] < distance) {
+        			source_id = dtnrouting.source_index[s];
+        			distance = dtnrouting.allNodes.get(dtnrouting.source_index[s]).ptD.dest_distance[d];}
+        		}
+        	// If no path choose source randomly
+        	if(distance==1000.0)
+        			source_id = rand.nextInt(dtnrouting.Sources.size());
+        	
+        	///********************************
+        	System.out.print("\nS->D:(" + (dtnrouting.source_index[source_id]) + "->"+ (dtnrouting.dest_index[d])+") ");
+        	System.out.println(dtnrouting.allNodes.get(dtnrouting.source_index[source_id]).ptD.paths.get(d));
         	
         	//Destination chooses number of packets randomly
-        	dtnrouting.Destinations.get(d).num_packets =rand.nextInt(15)+1;
-        	dtnrouting.Destinations.get(d).packets_ttl =rand.nextInt(1000)+500;
+        	Node destNode = dtnrouting.allNodes.get(dtnrouting.dest_index[d]);
         	
-        	for(int j=0; j< dtnrouting.Destinations.get(d).num_packets; j++) {//number of packets that each source will transmit..
+        	
+        	destNode.num_packets =rand.nextInt(20)+1;
+        	destNode.packets_ttl =rand.nextInt(100)+50;
+        	
+        	//Below code generates packets for each destination
+        	//stores the path a packet will take from the shortest path from its source to destination
+        	// Stores them in its selected source buffer
+        	for(int j=0; j< destNode.num_packets; j++) {//number of packets that each source will transmit..
            	    Packet p =new Packet();
-           	    p.maxTTL=dtnrouting.Destinations.get(d).packets_ttl;
+           	    p.maxTTL=destNode.packets_ttl;
            	    p.refreshPacketSettings();
-           	    dtnrouting.Destinations.get(d).nodePackets.add(p);
+           	    destNode.nodePackets.add(p);
            	    dtnrouting.arePacketsDelivered.add(p);
-        	
+
+           	    // Source node of the destination
+           	    Node sourceNode = dtnrouting.allNodes.get(source_id);
+           	    //System.out.print("Packet "+ p.packetName+": path ");
+           	    // Packet will follow the shortest path from source too destination
+           	    for(int c=0; c < sourceNode.ptD.paths.get(d).size(); c ++) {
+           	    	if(sourceNode.ptD.paths.get(d).get(c)==(-1)) {
+           	    		break; // store no path for packet
+           	    	}
+           	    	else {
+           	    		p.pathHops.add(dtnrouting.allNodes.get(sourceNode.ptD.paths.get(d).get(c)));
+           	    		//System.out.print(dtnrouting.allNodes.get(sourceNode.ptD.paths.get(d).get(c)).name+",");
+           	    	}}
+           	 
+           	  // Store packet to inside source buffer
               if(dtnrouting.Sources.get(source_id).queueSizeLeft > p.packetSize)
                {    
             	    dtnrouting.Sources.get(source_id).queueSizeLeft-=p.packetSize; //update queue space after putting packet in it
                     dtnrouting.Sources.get(source_id).packetIDHash.add(p.packetName); //Store ID of packet in the source as Hash value
                     //dtnrouting.Sources.get(source_id).packetTimeSlots.put(p.packetName,0);
                     dtnrouting.Sources.get(source_id).packetCopies.put(p.packetName,1);
-                    dtnrouting.Sources.get(source_id).DestNPacket.put(p,dtnrouting.Destinations.get(d));
-                    dtnrouting.sdpTA.append("\n "+dtnrouting.Sources.get(source_id).ID+"--"+dtnrouting.Destinations.get(d).ID+" ("+p.packetName+")");
+                    // these packets have no path
+                    if(p.pathHops.size()==0) {
+                    	dtnrouting.Sources.get(source_id).DestNPacket.put(p,null);
+                    	dtnrouting.Sources.get(source_id).number_packet_arrived+=1;}
+                    else
+                    dtnrouting.Sources.get(source_id).DestNPacket.put(p,destNode);
+                    //System.out.println("SOURCE: "+dtnrouting.Sources.get(source_id).name+", DEST: "+destNode.name);
+                    dtnrouting.sdpTA.append("\n "+dtnrouting.Sources.get(source_id).ID+"--"+destNode.ID+" ("+p.packetName+")");
                  }
               
               else    //If queue of the packet has not enough space to store the new packet then

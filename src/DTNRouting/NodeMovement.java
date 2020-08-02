@@ -4,7 +4,7 @@
 
 package DTNRouting;
 
-import java.util.ArrayList;
+//import java.util.ArrayList;
 //******************************************************************************
 //IMPORT FILES
 import java.util.Random;
@@ -44,28 +44,34 @@ public NodeMovement()
 
 public  void InitialNodePositions(Node n)
 {
-	if(dtnrouting.movementtype.equals("Random")){
+	if(dtnrouting.movementtype.equals("Random") || n.name.substring(0,1).equals("S")){
 	  n.x_coord.clear();
 	  n.y_coord.clear();
-	  n.nodeX = rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start;
+	  n.nodeX =rand.nextInt(n.xwidth) + n.topleft_xcorner; 
+	  //rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start;
       n.x_coord.add(n.nodeX);  //generate random value for x and y positions of node
-      n.nodeY = rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start;
+      n.nodeY =rand.nextInt(n.yheight) + n.topleft_ycorner; 
+      //rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start;
       n.y_coord.add(n.nodeY);
+      n.prob_coord.add(rand.nextDouble());
       n.positionTracker=0;}
 	// For pseudo-random and the dataset
-	 else if(dtnrouting.movementtype.equals("Pseudorandom"))
+	 else if(dtnrouting.movementtype.equals("Pseudorandom") & !n.name.substring(0,1).equals("S"))
       { 
-		 InitializePsuedoPath(n);
+		n.positionTracker=0;
+		//System.out.println(n.name);
+		InitializePsuedoPath(n);
         n.nodeX=n.x_coord.get(n.positionTracker); 
     	n.nodeY=n.y_coord.get(n.positionTracker);
       }
 	  // For pseudo-random and the dataset
-	  else if(dtnrouting.movementtype.equals("Dataset"))
+	  else if(dtnrouting.movementtype.equals("Dataset") & !n.name.substring(0,1).equals("S"))
 	  {     
 	        n.nodeX=n.x_coord.get(n.startTracker); 
 	    	n.nodeY=n.y_coord.get(n.startTracker);
 	  }
       
+	n.moveFlag=true;
 }
 
 //******************************************************************************
@@ -73,9 +79,20 @@ public  void InitialNodePositions(Node n)
 
 public void RandomMovement(Node n)
 {
-
+	
+ 
   speedController=rand.nextInt(100)+1;
-  if(!n.name.substring(0,1).equals("S"))
+  if(n.moveFlag==false) {
+	  n.counter = n.counter+1; 
+	  if(n.counter==1000) 
+	  { //to stay at a place at least 20 time units before calculating prob.
+	  n.moveFlag = (rand.nextDouble() > n.prob_coord.get(n.positionTracker)) ? true : false;
+      //System.out.println(n.counter+": "+n.prob_coord.get(n.positionTracker)+" :"+n.moveFlag);
+	  n.counter=0;
+	  }}
+  
+  // decide whether to change the position
+  if(!n.name.substring(0,1).equals("S") & n.moveFlag)
      {
         if(n.speed>=speedController)
         {
@@ -94,11 +111,22 @@ public void RandomMovement(Node n)
                             n.nodeY++;
            
            // Choose random location for x-coordinate and y-coordinate
+           // 20 different positions	
            if(n.x_coord.get(n.positionTracker)==n.nodeX & n.y_coord.get(n.positionTracker)==n.nodeY){
-             n.x_coord.add(rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start);  
-             n.y_coord.add(rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start);
-             n.positionTracker=n.positionTracker+1;
+        	 
+        	 if(n.positionTracker==19)
+        		 	n.positionTracker =0;
+        	 else {
+		             n.x_coord.add(rand.nextInt(n.xwidth) + n.topleft_xcorner);  
+		             n.y_coord.add(rand.nextInt(n.yheight) + n.topleft_ycorner);
+		             n.positionTracker=n.positionTracker+1;
+		             n.prob_coord.add(rand.nextDouble());
              }
+        	 
+        	  
+        		  n.moveFlag = (rand.nextDouble() > n.prob_coord.get(n.positionTracker)) ? true : false;
+        	 
+           }
             
          }
        }
@@ -111,11 +139,13 @@ public void RandomMovement(Node n)
 public void InitializePsuedoPath(Node n)
 {
  
-	int loc=rand.nextInt(20)+5;
+	int loc=rand.nextInt(10)+3;
 	for(int i=0;i< loc-1 ;i++) {
-		  n.x_coord.add(rand.nextInt(dtnrouting.width-n.getRadioRange()) + dtnrouting.x_start);  
-          n.y_coord.add(rand.nextInt(dtnrouting.height-n.getRadioRange()) + dtnrouting.y_start);
+		  n.x_coord.add(rand.nextInt(n.xwidth) + n.topleft_xcorner);  
+          n.y_coord.add(rand.nextInt(n.yheight) + n.topleft_ycorner);
+          n.prob_coord.add(rand.nextDouble()); // probability of staying at this location 
    }
+//	System.out.println(n.x_coord);
 }
 
 public void InitisalizeDatasetPath(Node n)
@@ -132,7 +162,17 @@ public void InitisalizeDatasetPath(Node n)
 public void Follow_PseudoRandomPath(Node n)
 {
 	speedController=rand.nextInt(100)+1;
-	  if(!n.name.substring(0,1).equals("S"))
+	 
+	  if(n.moveFlag==false) {
+		  n.counter = n.counter+1; 
+		  if(n.counter==1000) 
+		  { //to stay at a place at least 20 time units before calculating prob.
+		  n.moveFlag = (rand.nextDouble() > n.prob_coord.get(n.positionTracker)) ? true : false;
+	      //System.out.println(n.counter+": "+n.prob_coord.get(n.positionTracker)+" :"+n.moveFlag);
+		  n.counter=0;
+		  }}
+	  
+	  if(!n.name.substring(0,1).equals("S") & n.moveFlag)
 	     {
 	        if(n.speed>=speedController)
 	        {
@@ -152,23 +192,12 @@ public void Follow_PseudoRandomPath(Node n)
 	           
 	           // Choose random location for x-coordinate and y-coordinate
 	           if(n.x_coord.get(n.positionTracker)==n.nodeX & n.y_coord.get(n.positionTracker)==n.nodeY){
-	               if(n.positionTracker==n.x_coord.size()) { //If reached end, traverse back
-	        	   n.positionTracker=n.positionTracker-1;
-	        	   n.direction=-1;}
-	               
-	               else if(n.positionTracker==0) { // If at 0 index, move forward
+	               if((n.positionTracker+1)==n.x_coord.size())  //If reached end, traverse back
+	            	   n.positionTracker=0;
+	               else 
 	            	   n.positionTracker=n.positionTracker+1;
-		        	   n.direction=1;  
-	               }
-	               
-	               else
-	            	   n.positionTracker=n.positionTracker+n.direction; //follow the direction
-	               
-	             }
-	            
-	         }
-	       }
- 
+	               n.moveFlag = (rand.nextDouble() > n.prob_coord.get(n.positionTracker)) ? true : false;}
+	        }}
 }//End of method
 
 //******************************************************************************
@@ -193,21 +222,16 @@ public void Follow_DatasetPath(Node n)
 	            else if(n.y_coord.get(n.positionTracker)>n.nodeY)
 	                            n.nodeY++;
 	           
-	           // Choose random location for x-coordinate and y-coordinate
-	           if(n.x_coord.get(n.positionTracker)==n.nodeX & n.y_coord.get(n.positionTracker)==n.nodeY){
-	               if(n.positionTracker == n.x_coord.size())  
-	            	   //If reached end, traverse back
-	            	   n.positionTracker = 0;
-	        	   
-	               
-	               else if(n.positionTracker < n.x_coord.size())  // If at 0 index, move forward
-	            	   n.positionTracker=n.positionTracker+1;
-		        	
-	                  
-	             }
-	            
-	         }
-	       }
+	           // Choose next location for x-coordinate and y-coordinate
+		       
+		           if(n.x_coord.get(n.positionTracker)==n.nodeX & n.y_coord.get(n.positionTracker)==n.nodeY){
+		               if((n.positionTracker+1)==n.x_coord.size())  //If reached end, traverse back
+		        	   n.positionTracker=0;
+		               
+		               else 
+		            	   n.positionTracker=n.positionTracker+1;}
+		        }}
+	        
  
 }
 
